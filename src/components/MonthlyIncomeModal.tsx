@@ -99,8 +99,9 @@ export const MonthlyIncomeModal: React.FC<MonthlyIncomeModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] font-medium text-zinc-400 mb-1">
-                  {p1.name} (€)
+                <label className="block text-[11px] font-medium text-violet-300 mb-1 flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-violet-400" />
+                  <span>{p1.name} (€)</span>
                 </label>
                 <input
                   type="number"
@@ -108,14 +109,15 @@ export const MonthlyIncomeModal: React.FC<MonthlyIncomeModalProps> = ({
                   min="0"
                   value={p1Income}
                   onChange={(e) => setP1Income(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-100 font-mono focus:outline-none"
+                  className="w-full bg-zinc-900 border border-violet-500/40 rounded px-2.5 py-1.5 text-xs text-zinc-100 font-mono focus:outline-none"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-medium text-zinc-400 mb-1">
-                  {p2.name} (€)
+                <label className="block text-[11px] font-medium text-amber-300 mb-1 flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-amber-400" />
+                  <span>{p2.name} (€)</span>
                 </label>
                 <input
                   type="number"
@@ -123,7 +125,7 @@ export const MonthlyIncomeModal: React.FC<MonthlyIncomeModalProps> = ({
                   min="0"
                   value={p2Income}
                   onChange={(e) => setP2Income(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-zinc-100 font-mono focus:outline-none"
+                  className="w-full bg-zinc-900 border border-amber-500/40 rounded px-2.5 py-1.5 text-xs text-zinc-100 font-mono focus:outline-none"
                   required
                 />
               </div>
@@ -150,8 +152,10 @@ export const MonthlyIncomeModal: React.FC<MonthlyIncomeModalProps> = ({
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-zinc-400">Podiel na spoločné:</span>
-                <span className="font-semibold text-zinc-200 font-mono">
-                  {p1.name} {p1Ratio.toFixed(1)}% &nbsp;/&nbsp; {p2.name} {p2Ratio.toFixed(1)}%
+                <span className="font-mono">
+                  <span className="text-violet-400 font-semibold">{p1.name} {p1Ratio.toFixed(1)}%</span>
+                  <span className="text-zinc-500 mx-1.5">/</span>
+                  <span className="text-amber-400 font-semibold">{p2.name} {p2Ratio.toFixed(1)}%</span>
                 </span>
               </div>
             </div>
@@ -192,10 +196,10 @@ export const MonthlyIncomeModal: React.FC<MonthlyIncomeModalProps> = ({
                         {rec.note && (
                           <div className="text-[11px] text-zinc-400">{rec.note}</div>
                         )}
-                        <div className="text-[11px] text-zinc-500 mt-0.5 flex items-center gap-2 font-mono">
-                          <span>{p1.name}: {formatCurrency(rec.partner1Income)} ({recP1Ratio.toFixed(1)}%)</span>
+                        <div className="text-[11px] text-zinc-400 mt-0.5 flex items-center gap-2 font-mono">
+                          <span className="text-violet-300">{p1.name}: {formatCurrency(rec.partner1Income)} ({recP1Ratio.toFixed(1)}%)</span>
                           <span>•</span>
-                          <span>{p2.name}: {formatCurrency(rec.partner2Income)} ({recP2Ratio.toFixed(1)}%)</span>
+                          <span className="text-amber-300">{p2.name}: {formatCurrency(rec.partner2Income)} ({recP2Ratio.toFixed(1)}%)</span>
                         </div>
                       </div>
 
@@ -204,8 +208,8 @@ export const MonthlyIncomeModal: React.FC<MonthlyIncomeModalProps> = ({
                           <div className="font-bold text-zinc-100 font-mono">
                             {formatCurrency(recTotal)}
                           </div>
-                          <span className="text-[10px] text-zinc-400 font-mono">
-                            {recP1Ratio.toFixed(0)} / {recP2Ratio.toFixed(0)} %
+                          <span className="text-[10px] font-mono">
+                            <span className="text-violet-400">{recP1Ratio.toFixed(0)}%</span> / <span className="text-amber-400">{recP2Ratio.toFixed(0)}%</span>
                           </span>
                         </div>
 

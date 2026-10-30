@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { BankAccount, Category, OwnerId, PartnerProfile, Transaction } from '../types';
 import { formatCurrency } from '../utils/calculations';
+import { getCategoryColor, getOwnerConfig } from '../utils/themeColors';
 
 interface TransactionsTabProps {
   transactions: Transaction[];
@@ -189,9 +190,9 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
               className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-zinc-200 focus:outline-none"
             >
               <option value="all">Všetci platitelia</option>
-              <option value="partner1">{p1.name} (Partner 1)</option>
-              <option value="partner2">{p2.name} (Partner 2)</option>
-              <option value="joint">Spoločný účet páru</option>
+              <option value="partner1">{p1.name}</option>
+              <option value="partner2">{p2.name}</option>
+              <option value="joint">Spoločný účet</option>
             </select>
           </div>
         </div>
@@ -203,13 +204,13 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-zinc-800 bg-zinc-950/70 text-[11px] font-medium text-zinc-400 uppercase tracking-wider">
-                <th className="py-2 px-3">Dátum</th>
-                <th className="py-2 px-3">Popis / Obchodník</th>
-                <th className="py-2 px-3">Zaradenie</th>
-                <th className="py-2 px-3">Kategória</th>
-                <th className="py-2 px-3">Účet a platiteľ</th>
-                <th className="py-2 px-3 text-right">Suma (€)</th>
-                <th className="py-2 px-2 text-center">Akcia</th>
+                <th className="py-2.5 px-3">Dátum</th>
+                <th className="py-2.5 px-3">Popis / Obchodník</th>
+                <th className="py-2.5 px-3">Zaradenie</th>
+                <th className="py-2.5 px-3">Kategória</th>
+                <th className="py-2.5 px-3">Účet a platiteľ</th>
+                <th className="py-2.5 px-3 text-right">Suma (€)</th>
+                <th className="py-2.5 px-2 text-center">Akcia</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/60 text-xs text-zinc-200">
@@ -225,50 +226,60 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                   const isP1 = tx.paidByOwnerId === 'partner1';
                   const isP2 = tx.paidByOwnerId === 'partner2';
                   const ownerObj = isP1 ? p1 : isP2 ? p2 : null;
+                  const ownerConf = getOwnerConfig(tx.paidByOwnerId);
+                  const catColor = getCategoryColor(tx.category);
 
                   return (
                     <tr key={tx.id} className="hover:bg-zinc-800/30 transition">
-                      <td className="py-2 px-3 whitespace-nowrap text-zinc-400 font-mono text-[11px]">
+                      <td className="py-2.5 px-3 whitespace-nowrap text-zinc-400 font-mono text-[11px]">
                         {tx.date}
                       </td>
-                      <td className="py-2 px-3">
+                      <td className="py-2.5 px-3">
                         <div className="font-medium text-zinc-100">{tx.description}</div>
                         {tx.note && (
                           <div className="text-[11px] text-zinc-500 italic">{tx.note}</div>
                         )}
                       </td>
-                      <td className="py-2 px-3 whitespace-nowrap">
+                      <td className="py-2.5 px-3 whitespace-nowrap">
                         <button
                           onClick={() => onToggleShared(tx.id)}
                           title="Kliknutím prepnete Spoločné / Súkromné"
                           className={`px-2 py-0.5 rounded text-[10px] font-medium border transition ${
                             tx.isShared
-                              ? 'bg-zinc-800 text-zinc-200 border-zinc-700'
-                              : 'bg-zinc-950 text-zinc-500 border-zinc-800'
+                              ? 'bg-sky-500/15 text-sky-300 border-sky-500/30'
+                              : 'bg-zinc-950 text-zinc-400 border-zinc-800'
                           }`}
                         >
-                          {tx.isShared ? <Share2 className="w-2.5 h-2.5" /> : <Lock className="w-2.5 h-2.5" />}
+                          {tx.isShared ? <Share2 className="w-2.5 h-2.5 text-sky-400 inline mr-1" /> : <Lock className="w-2.5 h-2.5 text-zinc-400 inline mr-1" />}
                           <span>{tx.isShared ? 'Spoločné' : 'Súkromné'}</span>
                         </button>
                       </td>
-                      <td className="py-2 px-3 whitespace-nowrap text-zinc-400">
-                        {tx.category}
+                      <td className="py-2.5 px-3 whitespace-nowrap">
+                        <span className="flex items-center gap-1.5 text-zinc-200">
+                          <span
+                            className="w-2 h-2 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: catColor }}
+                          />
+                          <span>{tx.category}</span>
+                        </span>
                       </td>
-                      <td className="py-2 px-3 whitespace-nowrap">
+                      <td className="py-2.5 px-3 whitespace-nowrap">
                         <div className="text-zinc-200">{account?.name || 'Účet'}</div>
-                        <div className="text-[10px] text-zinc-500">
-                          {ownerObj ? `Platil: ${ownerObj.name}` : 'Spoločný účet'}
+                        <div className="mt-0.5">
+                          <span className={`inline-block px-1.5 py-0.2 rounded text-[10px] border font-mono ${ownerConf.bgClass}`}>
+                            {ownerObj ? ownerObj.name : 'Spoločný účet'}
+                          </span>
                         </div>
                       </td>
-                      <td className="py-2 px-3 text-right whitespace-nowrap font-mono font-bold">
-                        <span className={tx.type === 'income' ? 'text-zinc-100' : 'text-zinc-300'}>
+                      <td className="py-2.5 px-3 text-right whitespace-nowrap font-mono font-bold">
+                        <span className={tx.type === 'income' ? 'text-emerald-400' : 'text-zinc-100'}>
                           {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
                         </span>
                       </td>
-                      <td className="py-2 px-2 text-center whitespace-nowrap">
+                      <td className="py-2.5 px-2 text-center whitespace-nowrap">
                         <button
                           onClick={() => onDeleteTransaction(tx.id)}
-                          className="p-1 text-zinc-600 hover:text-zinc-300 transition"
+                          className="p-1 text-zinc-600 hover:text-rose-400 transition"
                           title="Zmazať"
                         >
                           <Trash2 className="w-3.5 h-3.5" />

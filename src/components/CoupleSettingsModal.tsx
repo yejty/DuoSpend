@@ -34,13 +34,13 @@ export const CoupleSettingsModal: React.FC<CoupleSettingsModalProps> = ({
     onSavePartners([
       {
         id: 'partner1',
-        name: name1.trim() || 'Partner 1',
+        name: name1.trim() || 'Daniel',
         defaultMonthlyIncome: parseFloat(income1) || 0,
         avatarColor: color1,
       },
       {
         id: 'partner2',
-        name: name2.trim() || 'Partner 2',
+        name: name2.trim() || 'Janka',
         defaultMonthlyIncome: parseFloat(income2) || 0,
         avatarColor: color2,
       },
@@ -80,9 +80,10 @@ export const CoupleSettingsModal: React.FC<CoupleSettingsModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSave} className="p-4 space-y-3.5 text-xs">
-          <div className="p-3 rounded-lg bg-zinc-950 border border-zinc-800 space-y-2">
-            <div className="flex items-center gap-1.5 font-semibold text-zinc-300">
-              <span>Partner 1</span>
+          <div className="p-3 rounded-lg bg-zinc-950 border border-violet-500/30 space-y-2">
+            <div className="flex items-center gap-1.5 font-semibold text-violet-300">
+              <span className="w-2.5 h-2.5 rounded-full bg-violet-400" />
+              <span>{name1 || 'Daniel'}</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -108,9 +109,10 @@ export const CoupleSettingsModal: React.FC<CoupleSettingsModalProps> = ({
             </div>
           </div>
 
-          <div className="p-3 rounded-lg bg-zinc-950 border border-zinc-800 space-y-2">
-            <div className="flex items-center gap-1.5 font-semibold text-zinc-300">
-              <span>Partner 2</span>
+          <div className="p-3 rounded-lg bg-zinc-950 border border-amber-500/30 space-y-2">
+            <div className="flex items-center gap-1.5 font-semibold text-amber-300">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+              <span>{name2 || 'Janka'}</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -137,9 +139,9 @@ export const CoupleSettingsModal: React.FC<CoupleSettingsModalProps> = ({
           </div>
 
           <div className="p-2.5 bg-zinc-950 rounded border border-zinc-800 flex justify-between text-xs">
-            <span className="text-zinc-400">Predvolený pomer:</span>
-            <span className="font-semibold text-zinc-200 font-mono">
-              {name1}: {p1Percent} % &nbsp;|&nbsp; {name2}: {p2Percent} %
+            <span className="text-zinc-400">Predvolený pomer príjmov:</span>
+            <span className="font-semibold font-mono">
+              <span className="text-violet-400">{name1}: {p1Percent} %</span> &nbsp;|&nbsp; <span className="text-amber-400">{name2}: {p2Percent} %</span>
             </span>
           </div>
 

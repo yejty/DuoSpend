@@ -353,9 +353,9 @@ export const ReceiptScanModal: React.FC<ReceiptScanModalProps> = ({
                         onChange={(e) => setTargetOwner(e.target.value as OwnerId)}
                         className="w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-zinc-100 focus:outline-none"
                       >
-                        <option value="partner1">{p1.name} (Partner 1)</option>
-                        <option value="partner2">{p2.name} (Partner 2)</option>
-                        <option value="joint">Spoločný účet páru</option>
+                        <option value="partner1">{p1.name}</option>
+                        <option value="partner2">{p2.name}</option>
+                        <option value="joint">Spoločný účet</option>
                       </select>
                     </div>
 
@@ -366,7 +366,7 @@ export const ReceiptScanModal: React.FC<ReceiptScanModalProps> = ({
                           type="button"
                           onClick={() => setIsShared(true)}
                           className={`py-1 px-1 rounded border text-[10px] font-medium transition ${
-                            isShared ? 'bg-zinc-800 text-zinc-100 border-zinc-600' : 'bg-zinc-950 text-zinc-500 border-zinc-800'
+                            isShared ? 'bg-sky-500/20 text-sky-300 border-sky-500/40' : 'bg-zinc-950 text-zinc-500 border-zinc-800'
                           }`}
                         >
                           Spoločné

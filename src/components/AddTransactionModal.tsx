@@ -221,9 +221,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 onChange={(e) => setPaidBy(e.target.value as OwnerId)}
                 className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-zinc-100 focus:outline-none"
               >
-                <option value="partner1">{p1.name} (Partner 1)</option>
-                <option value="partner2">{p2.name} (Partner 2)</option>
-                <option value="joint">Spoločný účet páru</option>
+                <option value="partner1">{p1.name}</option>
+                <option value="partner2">{p2.name}</option>
+                <option value="joint">Spoločný účet</option>
               </select>
             </div>
 
@@ -235,19 +235,19 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsShared(true)}
-                  className={`py-1 px-2 rounded-lg text-xs font-medium border flex items-center justify-center gap-1 transition ${
+                  className={`py-1.5 px-2 rounded-lg text-xs font-medium border flex items-center justify-center gap-1.5 transition ${
                     isShared
-                      ? 'bg-zinc-800 text-zinc-100 border-zinc-700'
+                      ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
                       : 'bg-zinc-950 text-zinc-500 border-zinc-800'
                   }`}
                 >
-                  <Share2 className="w-3 h-3" />
+                  <Share2 className="w-3 h-3 text-sky-400" />
                   <span>Spoločné</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsShared(false)}
-                  className={`py-1 px-2 rounded-lg text-xs font-medium border flex items-center justify-center gap-1 transition ${
+                  className={`py-1.5 px-2 rounded-lg text-xs font-medium border flex items-center justify-center gap-1.5 transition ${
                     !isShared
                       ? 'bg-zinc-800 text-zinc-100 border-zinc-700'
                       : 'bg-zinc-950 text-zinc-500 border-zinc-800'

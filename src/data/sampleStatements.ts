@@ -15,9 +15,9 @@ export interface SampleStatementPreset {
 
 export const sampleStatementPresets: SampleStatementPreset[] = [
   {
-    id: 'sample-vub-alex',
-    name: 'VÚB Bežný účet (Alex)',
-    fileName: 'VUB_Vypis_Alex_November2026.pdf',
+    id: 'sample-vub-daniel',
+    name: 'VÚB Bežný účet (Daniel)',
+    fileName: 'VUB_Vypis_Daniel_November2026.pdf',
     bankName: 'VÚB banka',
     accountNumberMasked: 'SK88 •••• 3390',
     ownerId: 'partner1',
@@ -37,7 +37,7 @@ export const sampleStatementPresets: SampleStatementPreset[] = [
       },
       {
         date: '2026-11-07',
-        description: 'Kaderníctvo / Barber Alex',
+        description: 'Kaderníctvo / Barber Daniel',
         amount: 25.00,
         type: 'expense',
         category: 'Nákupy a osobná radosť',
@@ -75,9 +75,9 @@ export const sampleStatementPresets: SampleStatementPreset[] = [
     ],
   },
   {
-    id: 'sample-csob-sam',
-    name: 'ČSOB Smart účet (Sam)',
-    fileName: 'CSOB_Vypis_Sam_November2026.pdf',
+    id: 'sample-csob-janka',
+    name: 'ČSOB Smart účet (Janka)',
+    fileName: 'CSOB_Vypis_Janka_November2026.pdf',
     bankName: 'ČSOB',
     accountNumberMasked: 'SK45 •••• 6019',
     ownerId: 'partner2',

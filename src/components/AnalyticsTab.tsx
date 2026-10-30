@@ -1,59 +1,90 @@
 import React, { useState, useMemo } from 'react';
 import { 
   BarChart3, 
-  PieChart as PieChartIcon, 
   Share2, 
   Lock, 
+  ChevronDown, 
+  ChevronUp, 
   Calendar, 
-  CreditCard
+  Tag,
+  TrendingUp,
+  TrendingDown,
+  Target,
+  PiggyBank,
+  CheckCircle2,
+  AlertCircle,
+  ArrowUpRight,
+  ArrowDownRight,
+  ArrowRight
 } from 'lucide-react';
-import { BankAccount, Category, PartnerProfile, Transaction } from '../types';
-import { calculateCoupleFinances, formatCurrency } from '../utils/calculations';
+import { BankAccount, Category, MonthlyIncomeRecord, PartnerProfile, SavingsItem, Transaction } from '../types';
+import { formatCurrency } from '../utils/calculations';
+import { getCategoryColor, getOwnerConfig, OWNER_COLORS } from '../utils/themeColors';
 
 interface AnalyticsTabProps {
   transactions: Transaction[];
   accounts: BankAccount[];
   partners: PartnerProfile[];
+  monthlyIncomes?: MonthlyIncomeRecord[];
+  savings?: SavingsItem[];
+  onNavigateTab?: (tab: 'overview' | 'accounts' | 'analytics' | 'trends' | 'savings' | 'transactions') => void;
 }
 
-type DateRangeType = 'all' | 'monthly' | 'yearly' | 'custom';
+type DateRangeType = 'monthly' | 'yearly' | 'custom';
 type SpendingScope = 'combined' | 'shared' | 'individual';
-type ChartDisplayType = 'donut' | 'bars' | 'accounts';
-
-// Elegant monochrome / neutral tones
-const CATEGORY_COLORS: Record<string, string> = {
-  'Bývanie a nájom': '#fafafa', // White
-  'Potraviny a domácnosť': '#e4e4e7', // Zinc 200
-  'Energie a účty': '#d4d4d8', // Zinc 300
-  'Reštaurácie a kaviarne': '#a1a1aa', // Zinc 400
-  'Doprava a pohonné hmoty': '#8e8e93', // Slate
-  'Nákupy a osobná radosť': '#71717a', // Zinc 500
-  'Zdravie a šport': '#64748b', // Slate 500
-  'Zdravie a lekáreň': '#52525b', // Zinc 600
-  'Zábava a predplatné': '#475569', // Slate 600
-  'Deti a domáci miláčikovia': '#3f3f46', // Zinc 700
-  'Cestovanie a dovolenka': '#334155', // Slate 700
-  'Iné': '#27272a', // Zinc 800
-};
 
 export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({
   transactions,
   accounts,
   partners,
+  monthlyIncomes,
+  savings,
+  onNavigateTab,
 }) => {
   const [scope, setScope] = useState<SpendingScope>('combined');
   const [selectedIndividual, setSelectedIndividual] = useState<'both' | 'partner1' | 'partner2'>('both');
-  const [dateRangeType, setDateRangeType] = useState<DateRangeType>('all');
+  const [dateRangeType, setDateRangeType] = useState<DateRangeType>('monthly');
   const [selectedMonth, setSelectedMonth] = useState('2026-10');
   const [selectedYear, setSelectedYear] = useState('2026');
   const [customStartDate, setCustomStartDate] = useState('2026-10-01');
   const [customEndDate, setCustomEndDate] = useState('2026-11-30');
   const [selectedAccountId, setSelectedAccountId] = useState<string>('all');
-  const [chartDisplay, setChartDisplay] = useState<ChartDisplayType>('donut');
-  const [activeCategory, setActiveCategory] = useState<Category | null>(null);
+  
+  // Interactive expanded categories state (can expand multiple or toggle)
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+  const [hoveredCategory, setHoveredCategory] = useState<Category | null>(null);
 
-  const p1 = partners.find(p => p.id === 'partner1') || partners[0];
-  const p2 = partners.find(p => p.id === 'partner2') || partners[1];
+  const p1 = partners.find(p => p.id === 'partner1') || { name: 'Daniel' };
+  const p2 = partners.find(p => p.id === 'partner2') || { name: 'Janka' };
+
+  const activeIncome = useMemo(() => {
+    const rec = monthlyIncomes?.find(m => m.month === selectedMonth) || monthlyIncomes?.[0] || {
+      month: '2026-10',
+      partner1Income: 2500,
+      partner2Income: 1700,
+    };
+
+    let monthlyBase = rec.partner1Income + rec.partner2Income;
+    if (scope === 'individual') {
+      if (selectedIndividual === 'partner1') {
+        monthlyBase = rec.partner1Income;
+      } else if (selectedIndividual === 'partner2') {
+        monthlyBase = rec.partner2Income;
+      }
+    }
+
+    if (dateRangeType === 'yearly') {
+      return monthlyBase * 12;
+    }
+    return monthlyBase;
+  }, [monthlyIncomes, selectedMonth, scope, selectedIndividual, dateRangeType]);
+
+  const toggleCategoryExpand = (cat: string) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [cat]: !prev[cat],
+    }));
+  };
 
   const filteredTxs = useMemo(() => {
     return transactions.filter((tx) => {
@@ -98,13 +129,14 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({
   const totalFilteredSpend = filteredTxs.reduce((sum, tx) => sum + tx.amount, 0);
 
   const categoryData = useMemo(() => {
-    const sums: Partial<Record<Category, { amount: number; count: number }>> = {};
+    const sums: Partial<Record<Category, { amount: number; count: number; txs: Transaction[] }>> = {};
     filteredTxs.forEach((tx) => {
       if (!sums[tx.category]) {
-        sums[tx.category] = { amount: 0, count: 0 };
+        sums[tx.category] = { amount: 0, count: 0, txs: [] };
       }
       sums[tx.category]!.amount += tx.amount;
       sums[tx.category]!.count += 1;
+      sums[tx.category]!.txs.push(tx);
     });
 
     return Object.entries(sums)
@@ -113,101 +145,113 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({
         amount: data!.amount,
         count: data!.count,
         percent: totalFilteredSpend > 0 ? Math.round((data!.amount / totalFilteredSpend) * 100) : 0,
-        color: CATEGORY_COLORS[cat] || '#71717a',
+        color: getCategoryColor(cat),
+        txs: data!.txs.sort((a, b) => b.date.localeCompare(a.date)),
       }))
       .sort((a, b) => b.amount - a.amount);
   }, [filteredTxs, totalFilteredSpend]);
 
-  const accountSpendingData = useMemo(() => {
-    const sums: Record<string, number> = {};
-    filteredTxs.forEach((tx) => {
-      sums[tx.accountId] = (sums[tx.accountId] || 0) + tx.amount;
-    });
-
-    return accounts
-      .map((acc) => ({
-        account: acc,
-        amount: sums[acc.id] || 0,
-        percent: totalFilteredSpend > 0 ? Math.round(((sums[acc.id] || 0) / totalFilteredSpend) * 100) : 0,
-      }))
-      .filter((a) => a.amount > 0)
-      .sort((a, b) => b.amount - a.amount);
-  }, [filteredTxs, accounts, totalFilteredSpend]);
-
-  const radius = 80;
-  const strokeWidth = 22;
+  // Donut geometry calculations
+  const radius = 78;
+  const strokeWidth = 24;
   const circumference = 2 * Math.PI * radius;
   let cumulativeAngle = 0;
 
-  const activeCategoryTxs = useMemo(() => {
-    if (!activeCategory) return [];
-    return filteredTxs.filter((tx) => tx.category === activeCategory);
-  }, [activeCategory, filteredTxs]);
-
   return (
     <div className="space-y-6">
-      {/* Filters Bar */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 sm:p-5 space-y-4">
+      {/* Filters Toolbar */}
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 sm:p-5 space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <h2 className="text-sm font-semibold text-zinc-100 flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-zinc-400" />
-              Grafy výdavkov v mene EUR (€)
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-emerald-400" />
+              Grafy a štruktúra výdavkov
             </h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
-              Filtrovanie podľa kategórií, účtov a časového obdobia
-            </p>
           </div>
 
-          {/* Scope Selector: Všetky | Spoločné | Súkromné */}
-          <div className="flex items-center gap-1 p-1 bg-zinc-950 rounded-lg border border-zinc-800 text-xs">
+          {/* Scope Selector: Všetky výdavky | Spoločné | Súkromné (Daniel / Janka) */}
+          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-neutral-950 rounded-lg border border-neutral-800 text-xs">
             <button
-              onClick={() => { setScope('combined'); setActiveCategory(null); }}
+              onClick={() => setScope('combined')}
               className={`px-3 py-1.5 rounded-md font-medium transition ${
                 scope === 'combined'
-                  ? 'bg-zinc-800 text-zinc-100 shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-200'
+                  ? 'bg-neutral-800 text-white shadow-sm'
+                  : 'text-neutral-400 hover:text-neutral-200'
               }`}
             >
               Všetky výdavky
             </button>
             <button
-              onClick={() => { setScope('shared'); setActiveCategory(null); }}
-              className={`px-3 py-1.5 rounded-md font-medium flex items-center gap-1 transition ${
+              onClick={() => setScope('shared')}
+              className={`px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5 transition ${
                 scope === 'shared'
-                  ? 'bg-zinc-800 text-zinc-100 shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-200'
+                  ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm'
+                  : 'text-neutral-400 hover:text-sky-300'
               }`}
             >
-              <Share2 className="w-3 h-3" />
-              Spoločné
+              <Share2 className="w-3.5 h-3.5 text-sky-400" />
+              <span>Spoločné</span>
             </button>
             <button
-              onClick={() => { setScope('individual'); setActiveCategory(null); }}
-              className={`px-3 py-1.5 rounded-md font-medium flex items-center gap-1 transition ${
+              onClick={() => setScope('individual')}
+              className={`px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5 transition ${
                 scope === 'individual'
-                  ? 'bg-zinc-800 text-zinc-100 shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-200'
+                  ? 'bg-neutral-800 text-white shadow-sm'
+                  : 'text-neutral-400 hover:text-neutral-200'
               }`}
             >
-              <Lock className="w-3 h-3" />
-              Súkromné
+              <Lock className="w-3.5 h-3.5" />
+              <span>Súkromné</span>
             </button>
+
+            {scope === 'individual' && (
+              <div className="flex items-center gap-1 pl-2 border-l border-neutral-800">
+                <button
+                  onClick={() => setSelectedIndividual('both')}
+                  className={`px-2 py-0.5 rounded text-[11px] transition ${
+                    selectedIndividual === 'both' ? 'bg-neutral-800 text-white font-semibold' : 'text-neutral-400 hover:text-neutral-200'
+                  }`}
+                >
+                  Obaja
+                </button>
+                <button
+                  onClick={() => setSelectedIndividual('partner1')}
+                  className={`px-2 py-0.5 rounded text-[11px] flex items-center gap-1 transition ${
+                    selectedIndividual === 'partner1'
+                      ? 'bg-violet-500/20 text-violet-300 border border-violet-500/40 font-semibold'
+                      : 'text-neutral-400 hover:text-violet-300'
+                  }`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
+                  <span>{p1.name}</span>
+                </button>
+                <button
+                  onClick={() => setSelectedIndividual('partner2')}
+                  className={`px-2 py-0.5 rounded text-[11px] flex items-center gap-1 transition ${
+                    selectedIndividual === 'partner2'
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold'
+                      : 'text-neutral-400 hover:text-amber-300'
+                  }`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  <span>{p2.name}</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Filters Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-zinc-800/80 text-xs">
+        {/* Date & Account Filters - WITHOUT 'Všetky dátumy' */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-3 border-t border-neutral-800/80 text-xs">
           <div>
-            <label className="block text-[11px] font-medium text-zinc-400 mb-1">
+            <label className="block text-[11px] font-medium text-neutral-400 mb-1">
               Časové obdobie
             </label>
             <select
               value={dateRangeType}
               onChange={(e) => setDateRangeType(e.target.value as DateRangeType)}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-zinc-200 focus:outline-none"
+              className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-neutral-200 focus:outline-none focus:border-neutral-600"
             >
-              <option value="all">Všetky dátumy</option>
               <option value="monthly">Mesačný filter</option>
               <option value="yearly">Ročný filter</option>
               <option value="custom">Vlastný rozsah od-do</option>
@@ -216,30 +260,31 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({
 
           {dateRangeType === 'monthly' && (
             <div>
-              <label className="block text-[11px] font-medium text-zinc-400 mb-1">
+              <label className="block text-[11px] font-medium text-neutral-400 mb-1">
                 Vybrať mesiac
               </label>
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-zinc-200 focus:outline-none font-mono"
+                className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-neutral-200 focus:outline-none focus:border-neutral-600 font-mono"
               >
                 <option value="2026-10">Október 2026</option>
                 <option value="2026-11">November 2026</option>
                 <option value="2026-09">September 2026</option>
+                <option value="2026-08">August 2026</option>
               </select>
             </div>
           )}
 
           {dateRangeType === 'yearly' && (
             <div>
-              <label className="block text-[11px] font-medium text-zinc-400 mb-1">
+              <label className="block text-[11px] font-medium text-neutral-400 mb-1">
                 Vybrať rok
               </label>
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-zinc-200 focus:outline-none font-mono"
+                className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-neutral-200 focus:outline-none focus:border-neutral-600 font-mono"
               >
                 <option value="2026">Rok 2026</option>
                 <option value="2025">Rok 2025</option>
@@ -250,110 +295,107 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({
           {dateRangeType === 'custom' && (
             <div className="flex items-center gap-2">
               <div className="flex-1">
-                <label className="block text-[11px] font-medium text-zinc-400 mb-1">Od</label>
+                <label className="block text-[11px] font-medium text-neutral-400 mb-1">Od</label>
                 <input
                   type="date"
                   value={customStartDate}
                   onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1 text-zinc-200 focus:outline-none"
+                  className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-2 py-1 text-neutral-200 focus:outline-none focus:border-neutral-600"
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-[11px] font-medium text-zinc-400 mb-1">Do</label>
+                <label className="block text-[11px] font-medium text-neutral-400 mb-1">Do</label>
                 <input
                   type="date"
                   value={customEndDate}
                   onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1 text-zinc-200 focus:outline-none"
+                  className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-2 py-1 text-neutral-200 focus:outline-none focus:border-neutral-600"
                 />
               </div>
             </div>
           )}
 
           <div>
-            <label className="block text-[11px] font-medium text-zinc-400 mb-1">
+            <label className="block text-[11px] font-medium text-neutral-400 mb-1">
               Filtrovať podľa účtu
             </label>
             <select
               value={selectedAccountId}
               onChange={(e) => setSelectedAccountId(e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-zinc-200 focus:outline-none"
+              className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-neutral-200 focus:outline-none focus:border-neutral-600"
             >
               <option value="all">Všetky účty</option>
-              {accounts.map(acc => (
-                <option key={acc.id} value={acc.id}>
-                  {acc.name} ({acc.accountType === 'shared' ? 'Spoločný' : 'Súkromný'})
-                </option>
-              ))}
+              {accounts.map(acc => {
+                const ownerTxt = acc.ownerId === 'partner1' ? p1.name : acc.ownerId === 'partner2' ? p2.name : 'Spoločný';
+                return (
+                  <option key={acc.id} value={acc.id}>
+                    {acc.name} ({ownerTxt})
+                  </option>
+                );
+              })}
             </select>
-          </div>
-
-          <div className="flex items-end">
-            <div className="w-full flex items-center gap-1 p-1 bg-zinc-950 rounded-lg border border-zinc-800">
-              <button
-                onClick={() => setChartDisplay('donut')}
-                className={`flex-1 py-1 px-2 rounded font-medium transition ${
-                  chartDisplay === 'donut' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                Prstenec
-              </button>
-              <button
-                onClick={() => setChartDisplay('bars')}
-                className={`flex-1 py-1 px-2 rounded font-medium transition ${
-                  chartDisplay === 'bars' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                Kategórie
-              </button>
-              <button
-                onClick={() => setChartDisplay('accounts')}
-                className={`flex-1 py-1 px-2 rounded font-medium transition ${
-                  chartDisplay === 'accounts' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                Účty
-              </button>
-            </div>
           </div>
         </div>
       </div>
+      {onNavigateTab && (
+        <div className="bg-neutral-900/60 border border-neutral-800 rounded-xl p-3 sm:px-4 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 text-neutral-300">
+            <TrendingUp className="w-4 h-4 text-sky-400" />
+            <span>Chcete vidieť vývoj a plnenie cieľov za posledných 6 až 12 mesiacov?</span>
+          </div>
+          <button
+            onClick={() => onNavigateTab('trends')}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 font-medium transition text-xs whitespace-nowrap self-start sm:self-auto"
+          >
+            <span>Otvoriť kartu Trendy</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
-      {/* Main Charts Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Left Column */}
-        <div className="lg:col-span-6 bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-300">
-                  {scope === 'combined' && 'Všetky výdavky podľa kategórií'}
-                  {scope === 'shared' && 'Spoločné výdavky domácnosti'}
-                  {scope === 'individual' && 'Súkromné osobné výdavky'}
-                </h3>
-                <p className="text-xs text-zinc-400 mt-0.5 font-mono">
-                  Suma: <strong className="text-zinc-100">{formatCurrency(totalFilteredSpend)}</strong> ({filteredTxs.length} položiek)
-                </p>
-              </div>
+
+
+      {/* Main Unified View: Donut on Left, Expandable Categories on Right */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        {/* Left: Donut Chart & Overview (lg:col-span-5) */}
+        <div className="lg:col-span-5 bg-neutral-900 border border-neutral-800 rounded-xl p-5 sticky top-20">
+          <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-300">
+                {scope === 'combined' && 'Všetky výdavky'}
+                {scope === 'shared' && 'Spoločné výdavky'}
+                {scope === 'individual' && 'Súkromné výdavky'}
+              </h3>
             </div>
+            <span className="text-xs font-mono font-semibold text-emerald-400">
+              {filteredTxs.length} výdavkov
+            </span>
+          </div>
 
-            {/* Donut Chart */}
-            {chartDisplay === 'donut' && (
+          {totalFilteredSpend === 0 ? (
+            <div className="py-16 text-center text-neutral-500 text-xs">
+              V zvolenom období sa nenašli žiadne výdavky.
+            </div>
+          ) : (
+            <>
+              {/* Interactive SVG Donut */}
               <div className="relative flex flex-col items-center justify-center my-6">
-                <svg width="220" height="220" viewBox="0 0 240 240" className="transform -rotate-90">
+                <svg width="240" height="240" viewBox="0 0 240 240" className="transform -rotate-90">
                   <circle
                     cx="120"
                     cy="120"
                     r={radius}
                     fill="transparent"
-                    stroke="#18181b"
+                    stroke="#1c1917"
                     strokeWidth={strokeWidth}
                   />
                   {categoryData.map((cat) => {
                     const strokeDasharray = `${(cat.amount / (totalFilteredSpend || 1)) * circumference} ${circumference}`;
                     const strokeDashoffset = -cumulativeAngle;
                     cumulativeAngle += (cat.amount / (totalFilteredSpend || 1)) * circumference;
-                    const isSelected = activeCategory === cat.category;
+                    const isHovered = hoveredCategory === cat.category;
+                    const isExpanded = !!expandedCategories[cat.category];
 
                     return (
                       <circle
@@ -363,175 +405,255 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({
                         r={radius}
                         fill="transparent"
                         stroke={cat.color}
-                        strokeWidth={isSelected ? strokeWidth + 4 : strokeWidth}
+                        strokeWidth={isHovered || isExpanded ? strokeWidth + 5 : strokeWidth}
                         strokeDasharray={strokeDasharray}
                         strokeDashoffset={strokeDashoffset}
-                        className="cursor-pointer transition-all duration-200 hover:opacity-80"
-                        onClick={() => setActiveCategory(isSelected ? null : cat.category)}
+                        className="cursor-pointer transition-all duration-200 hover:opacity-85"
+                        onMouseEnter={() => setHoveredCategory(cat.category)}
+                        onMouseLeave={() => setHoveredCategory(null)}
+                        onClick={() => toggleCategoryExpand(cat.category)}
                       />
                     );
                   })}
                 </svg>
 
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                  <span className="text-[10px] text-zinc-400 uppercase tracking-wider max-w-[120px] truncate">
-                    {activeCategory || 'Spolu'}
+                {/* Donut Center Label */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none px-4">
+                  <span className="text-[11px] text-neutral-400 uppercase tracking-wider truncate max-w-[140px]">
+                    {hoveredCategory || 'Spolu výdavky'}
                   </span>
-                  <span className="text-lg font-bold text-zinc-100 font-mono mt-0.5">
-                    {activeCategory
-                      ? formatCurrency(categoryData.find(c => c.category === activeCategory)?.amount || 0)
+                  <span className="text-xl font-bold text-white font-mono mt-0.5">
+                    {hoveredCategory
+                      ? formatCurrency(categoryData.find(c => c.category === hoveredCategory)?.amount || 0)
                       : formatCurrency(totalFilteredSpend)}
                   </span>
-                  {activeCategory && (
-                    <span className="text-[11px] text-zinc-300 font-mono">
-                      {categoryData.find(c => c.category === activeCategory)?.percent} %
+                  {hoveredCategory ? (
+                    <span className="text-xs text-neutral-300 font-mono mt-0.5">
+                      {categoryData.find(c => c.category === hoveredCategory)?.percent} % z výdavkov
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-neutral-500 mt-0.5">
+                      {categoryData.length} kategórií
                     </span>
                   )}
                 </div>
               </div>
-            )}
 
-            {/* Category Bars */}
-            {chartDisplay === 'bars' && (
-              <div className="space-y-2.5 my-4 max-h-[290px] overflow-y-auto pr-1">
-                {categoryData.map((cat) => {
-                  const isSelected = activeCategory === cat.category;
-                  return (
-                    <div
-                      key={cat.category}
-                      onClick={() => setActiveCategory(isSelected ? null : cat.category)}
-                      className={`p-2 rounded-lg border transition cursor-pointer ${
-                        isSelected
-                          ? 'bg-zinc-800 border-zinc-600'
-                          : 'bg-zinc-950 border-zinc-800/80 hover:border-zinc-700'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-zinc-200">{cat.category}</span>
-                        <div className="flex items-center gap-2 font-mono">
-                          <span className="text-zinc-400 text-[11px]">{cat.percent} %</span>
-                          <span className="font-bold text-zinc-100">{formatCurrency(cat.amount)}</span>
-                        </div>
-                      </div>
-                      <div className="w-full bg-zinc-800 rounded-full h-1 mt-1.5 overflow-hidden">
-                        <div
-                          className="h-1 rounded-full"
-                          style={{ width: `${cat.percent}%`, backgroundColor: cat.color }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+              {/* Podiel na mesačnom príjme bez duplicitného menovania kategórií */}
+              <div className="pt-4 border-t border-neutral-800 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-neutral-400 font-medium">Podiel z mesačného príjmu</span>
+                  <span className="font-mono text-neutral-300">
+                    <span className="text-rose-400 font-semibold">
+                      {activeIncome > 0 ? ((totalFilteredSpend / activeIncome) * 100).toFixed(1) : 0} %
+                    </span>
+                    <span className="text-neutral-600 mx-1">/</span>
+                    {formatCurrency(activeIncome)}
+                  </span>
+                </div>
 
-            {/* Account Bars */}
-            {chartDisplay === 'accounts' && (
-              <div className="space-y-2.5 my-4 max-h-[290px] overflow-y-auto pr-1">
-                {accountSpendingData.map((item) => (
-                  <div
-                    key={item.account.id}
-                    className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800 space-y-1.5"
-                  >
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-zinc-200">{item.account.name}</span>
-                      <span className="font-mono font-bold text-zinc-100">
-                        {formatCurrency(item.amount)} ({item.percent} %)
-                      </span>
-                    </div>
-                    <div className="w-full bg-zinc-800 rounded-full h-1 overflow-hidden">
+                {/* Kompaktný farebný prúžok kategórií */}
+                <div className="w-full h-3 bg-neutral-950 rounded-full overflow-hidden flex border border-neutral-800/80 p-0.5">
+                  {categoryData.map(cat => {
+                    const catIncomeRatio = activeIncome > 0 ? (cat.amount / activeIncome) * 100 : 0;
+                    if (catIncomeRatio <= 0) return null;
+                    return (
                       <div
-                        className="h-1 rounded-full"
-                        style={{ width: `${item.percent}%`, backgroundColor: item.account.color }}
+                        key={cat.category}
+                        className="h-full rounded-xs transition-all duration-300 hover:brightness-125 cursor-pointer"
+                        style={{
+                          width: `${catIncomeRatio}%`,
+                          backgroundColor: cat.color,
+                        }}
+                        title={`${cat.category}: ${formatCurrency(cat.amount)} (${catIncomeRatio.toFixed(1)} % z príjmu)`}
+                        onClick={() => toggleCategoryExpand(cat.category)}
                       />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                    );
+                  })}
+                  {activeIncome > totalFilteredSpend && (
+                    <div
+                      className="h-full bg-emerald-500/25 border-l border-emerald-500/40 rounded-xs transition-all duration-300"
+                      style={{ width: `${Math.max(0, 100 - (totalFilteredSpend / (activeIncome || 1)) * 100)}%` }}
+                      title={`Zostáva z príjmu: ${formatCurrency(Math.max(0, activeIncome - totalFilteredSpend))}`}
+                    />
+                  )}
+                </div>
 
-          <div className="text-[11px] text-zinc-500 pt-3 border-t border-zinc-800 flex items-center justify-between">
-            <span>Kliknutím na segment filtrujete položky</span>
-            {activeCategory && (
-              <button
-                onClick={() => setActiveCategory(null)}
-                className="text-zinc-300 hover:underline"
-              >
-                Zrušiť výber
-              </button>
-            )}
-          </div>
+                <div className="flex items-center justify-between text-[11px] font-mono text-neutral-400 pt-0.5">
+                  <span>Výdavky: <strong className="text-neutral-200">{formatCurrency(totalFilteredSpend)}</strong></span>
+                  <span>Zostáva: <strong className="text-emerald-400">{formatCurrency(Math.max(0, activeIncome - totalFilteredSpend))}</strong></span>
+                </div>
+              </div>
+
+              {/* Quick Helper */}
+              {Object.values(expandedCategories).some(Boolean) && (
+                <div className="text-[11px] text-neutral-500 pt-2 border-t border-neutral-800 flex justify-end">
+                  <button
+                    onClick={() => setExpandedCategories({})}
+                    className="text-neutral-400 hover:text-white transition-colors"
+                  >
+                    Zbaliť všetky položky
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
-        {/* Right Column: Drilldown / Category List */}
-        <div className="lg:col-span-6 bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-300">
-                {activeCategory ? `Položky: ${activeCategory}` : 'Všetky kategórie'}
-              </h3>
-              <span className="text-xs text-zinc-500 font-mono">
-                {activeCategory ? `${activeCategoryTxs.length} položiek` : `${categoryData.length} kategórií`}
-              </span>
-            </div>
+        {/* Right: Expandable Categories by Default with Inline Transactions (lg:col-span-7) */}
+        <div className="lg:col-span-7 bg-neutral-900 border border-neutral-800 rounded-xl p-5">
+          <div className="flex items-center justify-between pb-3 border-b border-neutral-800 mb-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-300">
+              Kategórie a transakcie
+            </h3>
+            <button
+              onClick={() => {
+                const allExpanded = categoryData.every(c => expandedCategories[c.category]);
+                const nextState: Record<string, boolean> = {};
+                categoryData.forEach(c => {
+                  nextState[c.category] = !allExpanded;
+                });
+                setExpandedCategories(nextState);
+              }}
+              className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors font-medium"
+            >
+              {categoryData.every(c => expandedCategories[c.category]) ? 'Zbaliť všetky' : 'Rozbaliť všetky'}
+            </button>
+          </div>
 
-            {activeCategory ? (
-              <div className="mt-3 space-y-2 max-h-[340px] overflow-y-auto pr-1">
-                {activeCategoryTxs.length === 0 ? (
-                  <div className="text-center py-6 text-zinc-500 text-xs">
-                    V tejto kategórii nie sú žiadne položky.
-                  </div>
-                ) : (
-                  activeCategoryTxs.map((tx) => (
-                    <div
-                      key={tx.id}
-                      className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-between text-xs"
-                    >
-                      <div>
-                        <div className="text-zinc-200 font-medium">{tx.description}</div>
-                        <div className="text-[10px] text-zinc-500 font-mono mt-0.5">
-                          {tx.date} • {tx.isShared ? 'Spoločné' : 'Súkromné'}
-                        </div>
-                      </div>
-                      <span className="font-mono font-bold text-zinc-100">
-                        {formatCurrency(tx.amount)}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-            ) : (
-              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[340px] overflow-y-auto pr-1">
-                {categoryData.map((cat) => (
+          {categoryData.length === 0 ? (
+            <div className="py-12 text-center text-neutral-500 text-xs">
+              Žiadne výdavky na zobrazenie.
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {categoryData.map(cat => {
+                const isExpanded = !!expandedCategories[cat.category];
+                const isHovered = hoveredCategory === cat.category;
+
+                return (
                   <div
                     key={cat.category}
-                    onClick={() => setActiveCategory(cat.category)}
-                    className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800/80 hover:border-zinc-700 transition cursor-pointer flex flex-col justify-between space-y-1.5"
+                    className={`rounded-xl border transition-all overflow-hidden ${
+                      isExpanded
+                        ? 'bg-neutral-950 border-neutral-700 shadow-sm'
+                        : isHovered
+                        ? 'bg-neutral-950/70 border-neutral-700'
+                        : 'bg-neutral-950/40 border-neutral-800 hover:border-neutral-700'
+                    }`}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-1.5">
+                    {/* Category Header Row (Click to Expand) */}
+                    <div
+                      onClick={() => toggleCategoryExpand(cat.category)}
+                      onMouseEnter={() => setHoveredCategory(cat.category)}
+                      onMouseLeave={() => setHoveredCategory(null)}
+                      className="p-3.5 flex items-center justify-between cursor-pointer select-none"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
                         <span
-                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          className="w-3.5 h-3.5 rounded-full flex-shrink-0"
                           style={{ backgroundColor: cat.color }}
                         />
-                        <span className="text-xs font-medium text-zinc-200 line-clamp-1">
-                          {cat.category}
-                        </span>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-white truncate">
+                              {cat.category}
+                            </span>
+                            <span className="text-[11px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 font-mono">
+                              {cat.count} tx
+                            </span>
+                          </div>
+                          {/* Percentage progress indicator */}
+                          <div className="w-32 sm:w-48 bg-neutral-800 rounded-full h-1.5 mt-1.5 overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-300"
+                              style={{ width: `${cat.percent}%`, backgroundColor: cat.color }}
+                            />
+                          </div>
+                        </div>
                       </div>
-                      <span className="text-xs font-mono font-bold text-zinc-100">
-                        {formatCurrency(cat.amount)}
-                      </span>
+
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <div className="text-sm font-bold text-white font-mono">
+                            {formatCurrency(cat.amount)}
+                          </div>
+                          <div className="text-xs text-neutral-400 font-mono">
+                            {cat.percent} %
+                          </div>
+                        </div>
+                        <div className="p-1 rounded text-neutral-400 hover:text-white">
+                          {isExpanded ? (
+                            <ChevronUp className="w-4 h-4" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4" />
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between text-[10px] text-zinc-500 font-mono">
-                      <span>{cat.count} tx</span>
-                      <span>{cat.percent} %</span>
-                    </div>
+
+                    {/* Inline Expanded Transactions List */}
+                    {isExpanded && (
+                      <div className="border-t border-neutral-800/80 bg-neutral-900/40 p-3 space-y-2">
+                        <div className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider px-1 pb-1 flex items-center justify-between">
+                          <span>Zoznam položiek ({cat.txs.length})</span>
+                          <span>Suma: {formatCurrency(cat.amount)}</span>
+                        </div>
+
+                        {cat.txs.map(tx => {
+                          const ownerConf = getOwnerConfig(tx.paidByOwnerId);
+                          const ownerName =
+                            tx.paidByOwnerId === 'partner1'
+                              ? p1.name
+                              : tx.paidByOwnerId === 'partner2'
+                              ? p2.name
+                              : 'Spoločný účet';
+
+                          return (
+                            <div
+                              key={tx.id}
+                              className="p-2.5 rounded-lg bg-neutral-950 border border-neutral-800/80 flex items-center justify-between text-xs hover:border-neutral-700 transition-colors"
+                            >
+                              <div className="min-w-0 pr-2">
+                                <div className="text-neutral-200 font-medium truncate">
+                                  {tx.description}
+                                </div>
+                                <div className="text-[11px] text-neutral-400 font-mono mt-0.5 flex flex-wrap items-center gap-1.5">
+                                  <span>{tx.date}</span>
+                                  <span>•</span>
+                                  <span className={tx.isShared ? 'text-sky-400' : 'text-neutral-400'}>
+                                    {tx.isShared ? 'Spoločné' : 'Súkromné'}
+                                  </span>
+                                  <span>•</span>
+                                  <span className={`px-1.5 py-0.2 rounded text-[10px] border ${ownerConf.badgeClass}`}>
+                                    {ownerName}
+                                  </span>
+                                  {tx.note && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="italic text-neutral-500 truncate max-w-[150px]">
+                                        {tx.note}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="text-right flex-shrink-0">
+                                <span className="font-mono font-bold text-white text-xs">
+                                  {formatCurrency(tx.amount)}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>

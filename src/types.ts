@@ -88,3 +88,19 @@ export interface ReceiptAnalysisResult {
   summary: string;
   items?: ReceiptItem[];
 }
+
+export type SavingsCategory = 'Rezerva' | 'Investície' | 'Dôchodok' | 'Ciele' | 'Iné';
+
+export interface SavingsItem {
+  id: string;
+  name: string;
+  category: SavingsCategory;
+  currentAmount: number;
+  targetAmount?: number;
+  monthlyContribution?: number;
+  ownerId: OwnerId;
+  institutionOrAccount?: string;
+  note?: string;
+  lastUpdated: string;
+}
+

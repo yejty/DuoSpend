@@ -4,12 +4,14 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { BankAccount, MonthlyIncomeRecord, OwnerId, PartnerProfile, Transaction } from './types';
-import { initialAccounts, initialMonthlyIncomes, initialPartners, initialTransactions } from './data/initialData';
+import { BankAccount, MonthlyIncomeRecord, OwnerId, PartnerProfile, SavingsItem, Transaction } from './types';
+import { initialAccounts, initialMonthlyIncomes, initialPartners, initialSavings, initialTransactions } from './data/initialData';
 import { Header } from './components/Header';
 import { OverviewTab } from './components/OverviewTab';
 import { AccountsTab } from './components/AccountsTab';
 import { AnalyticsTab } from './components/AnalyticsTab';
+import { TrendsTab } from './components/TrendsTab';
+import { SavingsTab } from './components/SavingsTab';
 import { TransactionsTab } from './components/TransactionsTab';
 import { PdfImportModal } from './components/PdfImportModal';
 import { ReceiptScanModal } from './components/ReceiptScanModal';
@@ -22,9 +24,10 @@ const STORAGE_KEY_ACCOUNTS = 'duospend_sk_accounts_v2';
 const STORAGE_KEY_TXS = 'duospend_sk_transactions_v2';
 const STORAGE_KEY_PARTNERS = 'duospend_sk_partners_v2';
 const STORAGE_KEY_INCOMES = 'duospend_sk_incomes_v2';
+const STORAGE_KEY_SAVINGS = 'duospend_sk_savings_v1';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'accounts' | 'analytics' | 'transactions'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'accounts' | 'analytics' | 'trends' | 'savings' | 'transactions'>('overview');
 
   // Modals
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
@@ -34,11 +37,22 @@ export default function App() {
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
-  // Core Financial State
+  // Core Financial State with migration for Daniel & Janka
   const [partners, setPartners] = useState<PartnerProfile[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_PARTNERS);
-      return saved ? JSON.parse(saved) : initialPartners;
+      const parsed: PartnerProfile[] = saved ? JSON.parse(saved) : initialPartners;
+      return parsed.map((p) => {
+        let name = p.name;
+        if (p.id === 'partner1' && (name === 'Alex' || name === 'Osoba 1' || name === 'Partner 1')) {
+          name = 'Daniel';
+        }
+        if (p.id === 'partner2' && (name === 'Sam' || name === 'Osoba 2' || name === 'Partner 2')) {
+          name = 'Janka';
+        }
+        const avatarColor = p.id === 'partner1' ? '#8b5cf6' : '#f59e0b';
+        return { ...p, name, avatarColor };
+      });
     } catch {
       return initialPartners;
     }
@@ -47,7 +61,19 @@ export default function App() {
   const [accounts, setAccounts] = useState<BankAccount[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_ACCOUNTS);
-      return saved ? JSON.parse(saved) : initialAccounts;
+      const parsed: BankAccount[] = saved ? JSON.parse(saved) : initialAccounts;
+      return parsed.map((a) => {
+        let name = a.name;
+        if (name.includes('Alex')) name = name.replace('Alex', 'Daniel');
+        if (name.includes('Sam')) name = name.replace('Sam', 'Janka');
+
+        let color = a.color;
+        if (a.ownerId === 'joint') color = '#0284c7';
+        if (a.ownerId === 'partner1') color = '#8b5cf6';
+        if (a.ownerId === 'partner2') color = '#f59e0b';
+
+        return { ...a, name, color };
+      });
     } catch {
       return initialAccounts;
     }
@@ -56,7 +82,16 @@ export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_TXS);
-      return saved ? JSON.parse(saved) : initialTransactions;
+      const parsed: Transaction[] = saved ? JSON.parse(saved) : initialTransactions;
+      return parsed.map((tx) => {
+        let desc = tx.description;
+        if (desc.includes('Alex')) desc = desc.replace('Alex', 'Daniel');
+        if (desc.includes('Sam')) desc = desc.replace('Sam', 'Janka');
+        let note = tx.note;
+        if (note?.includes('Alex')) note = note.replace('Alex', 'Daniel');
+        if (note?.includes('Sam')) note = note.replace('Sam', 'Janka');
+        return { ...tx, description: desc, note };
+      });
     } catch {
       return initialTransactions;
     }
@@ -68,6 +103,16 @@ export default function App() {
       return saved ? JSON.parse(saved) : initialMonthlyIncomes;
     } catch {
       return initialMonthlyIncomes;
+    }
+  });
+
+  // Savings State
+  const [savings, setSavings] = useState<SavingsItem[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_SAVINGS);
+      return saved ? JSON.parse(saved) : initialSavings;
+    } catch {
+      return initialSavings;
     }
   });
 
@@ -103,6 +148,14 @@ export default function App() {
       console.warn('LocalStorage error:', e);
     }
   }, [monthlyIncomes]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_SAVINGS, JSON.stringify(savings));
+    } catch (e) {
+      console.warn('LocalStorage error:', e);
+    }
+  }, [savings]);
 
   // Account Management
   const handleToggleAccountType = (accountId: string) => {
@@ -191,6 +244,31 @@ export default function App() {
     setTransactions((prev) => [tx, ...prev]);
   };
 
+  // Savings Management
+  const handleAddSavings = (item: Omit<SavingsItem, 'id' | 'lastUpdated'>) => {
+    const newItem: SavingsItem = {
+      ...item,
+      id: 'sav-' + Date.now(),
+      lastUpdated: new Date().toISOString().slice(0, 10),
+    };
+    setSavings((prev) => [newItem, ...prev]);
+  };
+
+  const handleUpdateSavings = (id: string, updates: Partial<SavingsItem>) => {
+    setSavings((prev) =>
+      prev.map((item) => {
+        if (item.id === id) {
+          return { ...item, ...updates };
+        }
+        return item;
+      })
+    );
+  };
+
+  const handleDeleteSavings = (id: string) => {
+    setSavings((prev) => prev.filter((item) => item.id !== id));
+  };
+
   // Monthly Income Management
   const handleSaveMonthlyIncome = (record: Omit<MonthlyIncomeRecord, 'id' | 'dateRecorded'>) => {
     setMonthlyIncomes((prev) => {
@@ -216,20 +294,22 @@ export default function App() {
 
   // Reset to default sample
   const handleResetSampleData = () => {
-    if (confirm('Obnoviť počiatočné ukážkové slovenské dáta páru (Alex & Sam v €)?')) {
+    if (confirm('Obnoviť počiatočné ukážkové slovenské dáta páru (Daniel & Janka v €)?')) {
       setPartners(initialPartners);
       setAccounts(initialAccounts);
       setTransactions(initialTransactions);
       setMonthlyIncomes(initialMonthlyIncomes);
+      setSavings(initialSavings);
       localStorage.removeItem(STORAGE_KEY_ACCOUNTS);
       localStorage.removeItem(STORAGE_KEY_TXS);
       localStorage.removeItem(STORAGE_KEY_PARTNERS);
       localStorage.removeItem(STORAGE_KEY_INCOMES);
+      localStorage.removeItem(STORAGE_KEY_SAVINGS);
     }
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans selection:bg-zinc-700 selection:text-zinc-100">
+    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans selection:bg-neutral-800 selection:text-white">
       {/* Header */}
       <Header
         activeTab={activeTab}
@@ -243,6 +323,7 @@ export default function App() {
         onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
         accountsCount={accounts.length}
         transactionsCount={transactions.length}
+        savingsCount={savings.length}
       />
 
       {/* Main View */}
@@ -280,6 +361,30 @@ export default function App() {
             transactions={transactions}
             accounts={accounts}
             partners={partners}
+            monthlyIncomes={monthlyIncomes}
+            savings={savings}
+            onNavigateTab={setActiveTab}
+          />
+        )}
+
+        {activeTab === 'trends' && (
+          <TrendsTab
+            transactions={transactions}
+            accounts={accounts}
+            partners={partners}
+            monthlyIncomes={monthlyIncomes}
+            savings={savings}
+            onNavigateTab={setActiveTab}
+          />
+        )}
+
+        {activeTab === 'savings' && (
+          <SavingsTab
+            savings={savings}
+            partners={partners}
+            onAddSavings={handleAddSavings}
+            onUpdateSavings={handleUpdateSavings}
+            onDeleteSavings={handleDeleteSavings}
           />
         )}
 
@@ -296,15 +401,15 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-zinc-900 bg-zinc-950 py-4 text-center text-xs text-zinc-500">
+      <footer className="border-t border-neutral-900 bg-neutral-950 py-4 text-center text-xs text-neutral-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>
-            DuoSpend • Správa bankových výpisov a párových výdavkov v mene EUR (€)
+            DuoSpend • Správa bankových výpisov a párových výdavkov v mene EUR (€) pre Daniela & Janku
           </span>
           <div className="flex items-center gap-4">
             <button
               onClick={handleResetSampleData}
-              className="hover:text-zinc-300 transition underline underline-offset-2"
+              className="hover:text-neutral-300 transition underline underline-offset-2"
             >
               Obnoviť ukážkové dáta
             </button>

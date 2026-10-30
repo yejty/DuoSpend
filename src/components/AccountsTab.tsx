@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { AccountType, BankAccount, OwnerId, PartnerProfile, Transaction } from '../types';
 import { formatCurrency } from '../utils/calculations';
+import { getOwnerConfig } from '../utils/themeColors';
 
 interface AccountsTabProps {
   accounts: BankAccount[];
@@ -81,32 +82,45 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* 3 Summary Cards */}
+      {/* 3 Summary Cards with Owner Color Highlights */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
           <div className="text-xs text-zinc-400">Celkový počet účtov</div>
           <div className="text-xl font-bold text-zinc-100 font-mono mt-1">
             {accounts.length}
           </div>
-          <div className="text-[11px] text-zinc-500 mt-1">
-            {p1.name}, {p2.name} a Spoločný pár
+          <div className="text-[11px] text-zinc-500 mt-1 flex items-center gap-2">
+            <span className="flex items-center gap-1 text-violet-400 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
+              {p1.name}
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1 text-amber-400 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              {p2.name}
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1 text-sky-400 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+              Spoločný pár
+            </span>
           </div>
         </div>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-          <div className="flex items-center justify-between text-xs text-zinc-300">
+        <div className="bg-zinc-900 border border-sky-500/30 rounded-xl p-4 relative overflow-hidden">
+          <div className="flex items-center justify-between text-xs text-sky-300">
             <span className="flex items-center gap-1.5 font-medium">
-              <Share2 className="w-3.5 h-3.5" /> Spoločné účty ({sharedAccounts.length})
+              <Share2 className="w-3.5 h-3.5 text-sky-400" /> Spoločné účty ({sharedAccounts.length})
             </span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 font-mono">
+            <span className="text-[10px] px-1.5 py-0.2 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30 font-mono">
               Domácnosť
             </span>
           </div>
-          <div className="text-xl font-bold text-zinc-100 font-mono mt-1">
+          <div className="text-xl font-bold text-sky-100 font-mono mt-1">
             {formatCurrency(sharedTotalBalance)}
           </div>
-          <div className="text-[11px] text-zinc-500 mt-1">
-            Spoločné výdavky páru
+          <div className="text-[11px] text-zinc-400 mt-1">
+            Spoločné financie na nájom a domácnosť
           </div>
         </div>
 
@@ -128,7 +142,7 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({
         </div>
       </div>
 
-      {/* Filter and Action Header */}
+      {/* Filter and Action Header with Owner Colors */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-zinc-900 p-3.5 rounded-xl border border-zinc-800">
         <div className="flex flex-wrap items-center gap-1.5 text-xs">
           <span className="text-zinc-500 mr-1">Filter:</span>
@@ -144,34 +158,36 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({
           </button>
           <button
             onClick={() => setFilterOwner('partner1')}
-            className={`px-2.5 py-1 rounded-md transition ${
+            className={`px-2.5 py-1 rounded-md flex items-center gap-1.5 transition ${
               filterOwner === 'partner1'
-                ? 'bg-zinc-800 text-zinc-100 font-medium'
-                : 'text-zinc-400 hover:text-zinc-200'
+                ? 'bg-violet-500/20 text-violet-300 border border-violet-500/40 font-medium'
+                : 'text-zinc-400 hover:text-violet-300'
             }`}
           >
-            {p1.name}
+            <span className="w-2 h-2 rounded-full bg-violet-400" />
+            <span>{p1.name}</span>
           </button>
           <button
             onClick={() => setFilterOwner('partner2')}
-            className={`px-2.5 py-1 rounded-md transition ${
+            className={`px-2.5 py-1 rounded-md flex items-center gap-1.5 transition ${
               filterOwner === 'partner2'
-                ? 'bg-zinc-800 text-zinc-100 font-medium'
-                : 'text-zinc-400 hover:text-zinc-200'
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-medium'
+                : 'text-zinc-400 hover:text-amber-300'
             }`}
           >
-            {p2.name}
+            <span className="w-2 h-2 rounded-full bg-amber-400" />
+            <span>{p2.name}</span>
           </button>
           <button
             onClick={() => setFilterOwner('joint')}
-            className={`px-2.5 py-1 rounded-md flex items-center gap-1 transition ${
+            className={`px-2.5 py-1 rounded-md flex items-center gap-1.5 transition ${
               filterOwner === 'joint'
-                ? 'bg-zinc-800 text-zinc-100 font-medium'
-                : 'text-zinc-400 hover:text-zinc-200'
+                ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 font-medium'
+                : 'text-zinc-400 hover:text-sky-300'
             }`}
           >
-            <Users className="w-3 h-3" />
-            Spoločné
+            <span className="w-2 h-2 rounded-full bg-sky-400" />
+            <span>Spoločný účet</span>
           </button>
         </div>
 
@@ -198,23 +214,40 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({
         {filteredAccounts.map((acc) => {
           const accountTxs = transactions.filter(t => t.accountId === acc.id);
           const isShared = acc.accountType === 'shared';
+          const ownerConf = getOwnerConfig(acc.ownerId);
 
           return (
             <div 
               key={acc.id}
-              className={`bg-zinc-900 border rounded-xl p-4 flex flex-col justify-between transition ${
-                isShared ? 'border-zinc-700' : 'border-zinc-800'
+              className={`bg-zinc-900 border rounded-xl p-4 flex flex-col justify-between transition relative overflow-hidden ${
+                isShared 
+                  ? 'border-sky-500/30 shadow-sm' 
+                  : acc.ownerId === 'partner1'
+                  ? 'border-violet-500/30'
+                  : 'border-amber-500/30'
               }`}
             >
+              <div 
+                className="absolute top-0 left-0 right-0 h-1" 
+                style={{ backgroundColor: acc.color || ownerConf.hex }}
+              />
+
               <div>
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start justify-between gap-3 pt-1">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded bg-zinc-800 border border-zinc-700 flex items-center justify-center font-bold text-zinc-300 text-xs">
-                      <Building2 className="w-3.5 h-3.5" />
+                    <div 
+                      className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs border"
+                      style={{ 
+                        backgroundColor: `${acc.color || ownerConf.hex}20`,
+                        borderColor: `${acc.color || ownerConf.hex}40`,
+                        color: acc.color || ownerConf.hex,
+                      }}
+                    >
+                      <Building2 className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-semibold text-zinc-100">
-                        {acc.name}
+                      <h4 className="text-xs font-semibold text-zinc-100 flex items-center gap-1.5">
+                        <span>{acc.name}</span>
                       </h4>
                       <p className="text-[11px] text-zinc-500 font-mono">
                         {acc.institution} • {acc.accountNumberMask}
@@ -228,18 +261,18 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({
                     title={`Kliknite pre zmenu na ${isShared ? 'Súkromný' : 'Spoločný'}`}
                     className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium border transition ${
                       isShared
-                        ? 'bg-zinc-800 text-zinc-100 border-zinc-600'
-                        : 'bg-zinc-950 text-zinc-500 border-zinc-800'
+                        ? 'bg-sky-500/15 text-sky-300 border-sky-500/30'
+                        : 'bg-zinc-950 text-zinc-400 border-zinc-800'
                     }`}
                   >
                     {isShared ? (
                       <>
-                        <Share2 className="w-2.5 h-2.5 text-zinc-300" />
+                        <Share2 className="w-2.5 h-2.5 text-sky-400" />
                         <span>Spoločný</span>
                       </>
                     ) : (
                       <>
-                        <Lock className="w-2.5 h-2.5 text-zinc-500" />
+                        <Lock className="w-2.5 h-2.5 text-zinc-400" />
                         <span>Súkromný</span>
                       </>
                     )}
@@ -260,17 +293,23 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({
                   </div>
                 </div>
 
-                {/* Vlastník */}
+                {/* Vlastník s farebným označením */}
                 <div className="mt-3 flex items-center justify-between text-xs">
-                  <span className="text-zinc-400">Vlastník:</span>
+                  <span className="text-zinc-400 flex items-center gap-1.5">
+                    <span 
+                      className="w-2 h-2 rounded-full" 
+                      style={{ backgroundColor: acc.color || ownerConf.hex }} 
+                    />
+                    Vlastník:
+                  </span>
                   <select
                     value={acc.ownerId}
                     onChange={(e) => onUpdateAccountOwner(acc.id, e.target.value as OwnerId)}
                     className="bg-zinc-950 border border-zinc-800 text-zinc-200 rounded px-2 py-1 text-xs focus:outline-none"
                   >
-                    <option value="partner1">{p1.name} (Partner 1)</option>
-                    <option value="partner2">{p2.name} (Partner 2)</option>
-                    <option value="joint">Spoločný pár</option>
+                    <option value="partner1">{p1.name}</option>
+                    <option value="partner2">{p2.name}</option>
+                    <option value="joint">Spoločný účet</option>
                   </select>
                 </div>
 
@@ -283,13 +322,17 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({
               </div>
 
               <div className="mt-3 pt-2 border-t border-zinc-800/60 flex items-center justify-between">
-                <span className="text-[10px] text-zinc-500">
-                  {isShared ? 'Spoločné pre domácnosť' : 'Súkromné osobné'}
+                <span className={`text-[10px] px-1.5 py-0.2 rounded border font-mono ${ownerConf.bgClass}`}>
+                  {acc.ownerId === 'joint' 
+                    ? 'Spoločný účet' 
+                    : acc.ownerId === 'partner1'
+                    ? p1.name
+                    : p2.name}
                 </span>
                 <button
                   onClick={() => onDeleteAccount(acc.id)}
                   title="Odstrániť účet"
-                  className="p-1 text-zinc-600 hover:text-zinc-300 transition"
+                  className="p-1 text-zinc-600 hover:text-rose-400 transition"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -354,9 +397,9 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({
                     onChange={(e) => setNewOwner(e.target.value as OwnerId)}
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-zinc-100 focus:outline-none"
                   >
-                    <option value="partner1">{p1.name} (Partner 1)</option>
-                    <option value="partner2">{p2.name} (Partner 2)</option>
-                    <option value="joint">Spoločný pár</option>
+                    <option value="partner1">{p1.name}</option>
+                    <option value="partner2">{p2.name}</option>
+                    <option value="joint">Spoločný účet</option>
                   </select>
                 </div>
                 <div>
@@ -366,7 +409,7 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({
                     onChange={(e) => setNewAccountType(e.target.value as AccountType)}
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-zinc-100 focus:outline-none"
                   >
-                    <option value="shared">Spoločný pár</option>
+                    <option value="shared">Spoločný účet</option>
                     <option value="private">Súkromný osobný</option>
                   </select>
                 </div>
