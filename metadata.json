@@ -1,0 +1,6 @@
+{
+  "name": "DuoSpend - Couples Bank Statement & Expense Manager",
+  "description": "Import PDF bank statements from multiple owners and accounts, classify accounts as shared or private, analyze individual and common spending with category charts, audio briefing with Gemini TTS, receipt photo analysis with Gemini Argon, and an intelligent financial advisor chatbot.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
