@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, X, Share2, Lock } from 'lucide-react';
+import { Plus, X, Share2, Lock, Banknote, CreditCard, ShieldCheck } from 'lucide-react';
 import { BankAccount, Category, OwnerId, PartnerProfile, Transaction } from '../types';
 
 interface AddTransactionModalProps {
@@ -44,6 +44,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [paidBy, setPaidBy] = useState<OwnerId>('partner1');
   const [isShared, setIsShared] = useState(true);
   const [txType, setTxType] = useState<'expense' | 'income'>('expense');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'transfer' | 'cash'>('card');
   const [note, setNote] = useState('');
 
   if (!isOpen) return null;
@@ -62,6 +63,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       paidByOwnerId: paidBy,
       isShared,
       type: txType,
+      paymentMethod,
       note: note.trim() || undefined,
     });
 
@@ -86,7 +88,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             <h3 className="text-sm font-semibold text-zinc-100">
               Pridať transakciu
             </h3>
-            <span className="text-xs text-zinc-500">• Mena EUR (€)</span>
+            <span className="text-xs text-zinc-500">• Mena EUR</span>
           </div>
           <button
             onClick={onClose}
@@ -109,7 +111,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
-              Výdavok (−)
+              Výdavok
             </button>
             <button
               type="button"
@@ -120,15 +122,53 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
-              Príjem (+)
+              Príjem
             </button>
+          </div>
+
+          {/* Spôsob platby: Karta/Prevod vs Hotovosť */}
+          <div>
+            <label className="block text-[11px] font-medium text-zinc-400 mb-1">
+              Spôsob platby
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('card')}
+                className={`py-1.5 px-3 rounded-lg border text-xs font-medium flex items-center justify-center gap-2 transition ${
+                  paymentMethod !== 'cash'
+                    ? 'bg-zinc-800 text-white border-zinc-700'
+                    : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white'
+                }`}
+              >
+                <CreditCard className="w-3.5 h-3.5 text-sky-400" />
+                <span>Karta a prevod</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('cash')}
+                className={`py-1.5 px-3 rounded-lg border text-xs font-medium flex items-center justify-center gap-2 transition ${
+                  paymentMethod === 'cash'
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-semibold'
+                    : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white'
+                }`}
+              >
+                <Banknote className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Hotovosť</span>
+              </button>
+            </div>
+            {paymentMethod === 'cash' && (
+              <p className="text-[10px] text-emerald-400 mt-1">
+                Platba v hotovosti – výdavok pre evidenciu mimo bankového účtu
+              </p>
+            )}
           </div>
 
           {/* Suma a Dátum */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-medium text-zinc-400 mb-1">
-                Suma (€)
+                Suma v €
               </label>
               <div className="relative">
                 <input
@@ -203,7 +243,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               >
                 {accounts.map(acc => (
                   <option key={acc.id} value={acc.id}>
-                    {acc.name} ({acc.institution})
+                    {acc.name} • {acc.institution}
                   </option>
                 ))}
               </select>

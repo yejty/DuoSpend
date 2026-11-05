@@ -18,34 +18,34 @@ export const CATEGORY_COLORS: Record<Category, string> = {
 
 export const SAVINGS_CATEGORY_COLORS: Record<SavingsCategory, { hex: string; bgClass: string; textClass: string; borderClass: string }> = {
   'Rezerva': {
-    hex: '#0284c7', // Sky Blue
-    bgClass: 'bg-sky-500/10',
-    textClass: 'text-sky-400',
-    borderClass: 'border-sky-500/30',
+    hex: '#0d9488', // Teal
+    bgClass: 'bg-teal-500/10',
+    textClass: 'text-teal-400',
+    borderClass: 'border-teal-500/30',
   },
   'Investície': {
-    hex: '#8b5cf6', // Violet
-    bgClass: 'bg-violet-500/10',
-    textClass: 'text-violet-400',
-    borderClass: 'border-violet-500/30',
-  },
-  'Dôchodok': {
-    hex: '#f59e0b', // Amber
-    bgClass: 'bg-amber-500/10',
-    textClass: 'text-amber-400',
-    borderClass: 'border-amber-500/30',
-  },
-  'Ciele': {
     hex: '#10b981', // Emerald
     bgClass: 'bg-emerald-500/10',
     textClass: 'text-emerald-400',
     borderClass: 'border-emerald-500/30',
   },
+  'Dôchodok': {
+    hex: '#f43f5e', // Rose
+    bgClass: 'bg-rose-500/10',
+    textClass: 'text-rose-400',
+    borderClass: 'border-rose-500/30',
+  },
+  'Ciele': {
+    hex: '#84cc16', // Lime
+    bgClass: 'bg-lime-500/10',
+    textClass: 'text-lime-400',
+    borderClass: 'border-lime-500/30',
+  },
   'Iné': {
-    hex: '#94a3b8', // Slate
-    bgClass: 'bg-slate-500/10',
-    textClass: 'text-slate-400',
-    borderClass: 'border-slate-500/30',
+    hex: '#a1a1aa', // Zinc
+    bgClass: 'bg-zinc-500/10',
+    textClass: 'text-zinc-400',
+    borderClass: 'border-zinc-500/30',
   },
 };
 

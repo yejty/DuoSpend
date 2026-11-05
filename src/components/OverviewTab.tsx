@@ -49,7 +49,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             onClick={onOpenIncomeModal}
             className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium border border-zinc-700/80 transition"
           >
-            Upraviť príjem ({summary.currentMonthIncome.partner1Ratio * 100 > 0 ? `${(summary.currentMonthIncome.partner1Ratio * 100).toFixed(0)}% / ${(summary.currentMonthIncome.partner2Ratio * 100).toFixed(0)}%` : 'Pomer'})
+            Upraviť príjem • {summary.currentMonthIncome.partner1Ratio * 100 > 0 ? `${(summary.currentMonthIncome.partner1Ratio * 100).toFixed(0)}% / ${(summary.currentMonthIncome.partner2Ratio * 100).toFixed(0)}%` : 'Pomer'}
           </button>
         </div>
 

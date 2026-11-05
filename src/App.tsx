@@ -19,6 +19,8 @@ import { AddTransactionModal } from './components/AddTransactionModal';
 import { MonthlyIncomeModal } from './components/MonthlyIncomeModal';
 import { AdvisorChatDrawer } from './components/AdvisorChatDrawer';
 import { CoupleSettingsModal } from './components/CoupleSettingsModal';
+import { EnableBankingModal } from './components/EnableBankingModal';
+import { WarrantyArchiveModal } from './components/WarrantyArchiveModal';
 
 const STORAGE_KEY_ACCOUNTS = 'duospend_sk_accounts_v2';
 const STORAGE_KEY_TXS = 'duospend_sk_transactions_v2';
@@ -36,6 +38,8 @@ export default function App() {
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isEnableBankingModalOpen, setIsEnableBankingModalOpen] = useState(false);
+  const [isWarrantyModalOpen, setIsWarrantyModalOpen] = useState(false);
 
   // Core Financial State with migration for Daniel & Janka
   const [partners, setPartners] = useState<PartnerProfile[]>(() => {
@@ -292,9 +296,67 @@ export default function App() {
     setMonthlyIncomes((prev) => prev.filter((r) => r.id !== id));
   };
 
+  // Enable Banking PSD2 Handlers
+  const handleSyncAccount = async (accountId: string) => {
+    await new Promise((r) => setTimeout(r, 600));
+    setAccounts((prev) =>
+      prev.map((a) => {
+        if (a.id === accountId) {
+          return {
+            ...a,
+            enableBankingConnected: true,
+            lastLiveSync: 'Live • pred chvíľou',
+          };
+        }
+        return a;
+      })
+    );
+  };
+
+  const handleSyncAllAccounts = async () => {
+    await new Promise((r) => setTimeout(r, 900));
+    setAccounts((prev) =>
+      prev.map((a) => ({
+        ...a,
+        enableBankingConnected: true,
+        lastLiveSync: 'Live • pred chvíľou',
+      }))
+    );
+  };
+
+  const handleConnectNewBank = (bankData: {
+    institution: string;
+    accountName: string;
+    ownerId: OwnerId;
+    accountType: 'shared' | 'private';
+    initialBalance: number;
+    iban: string;
+  }) => {
+    const id = 'acc-' + Date.now();
+    const ownerConf = partners.find((p) => p.id === bankData.ownerId);
+    const newAcc: BankAccount = {
+      id,
+      name: bankData.accountName,
+      institution: bankData.institution,
+      accountNumberMask: bankData.iban ? `SK•• •••• ${bankData.iban.slice(-4)}` : 'SK•• •••• 0000',
+      iban: bankData.iban,
+      ownerId: bankData.ownerId,
+      accountType: bankData.accountType,
+      currency: '€',
+      balance: bankData.initialBalance,
+      color: bankData.ownerId === 'joint' ? '#0284c7' : ownerConf?.avatarColor || '#8b5cf6',
+      importedAt: new Date().toISOString().split('T')[0],
+      enableBankingConnected: true,
+      lastLiveSync: 'Live • práve pripojené',
+    };
+    setAccounts((prev) => [newAcc, ...prev]);
+  };
+
+  const warrantiesCount = transactions.filter((t) => t.warranty?.isWarranty).length;
+
   // Reset to default sample
   const handleResetSampleData = () => {
-    if (confirm('Obnoviť počiatočné ukážkové slovenské dáta páru (Daniel & Janka v €)?')) {
+    if (confirm('Obnoviť počiatočné ukážkové slovenské dáta páru: Daniel & Janka v EUR?')) {
       setPartners(initialPartners);
       setAccounts(initialAccounts);
       setTransactions(initialTransactions);
@@ -321,9 +383,12 @@ export default function App() {
         onOpenIncomeModal={() => setIsIncomeModalOpen(true)}
         onOpenChatModal={() => setIsChatDrawerOpen(true)}
         onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
+        onOpenEnableBankingModal={() => setIsEnableBankingModalOpen(true)}
+        onOpenWarrantyModal={() => setIsWarrantyModalOpen(true)}
         accountsCount={accounts.length}
         transactionsCount={transactions.length}
         savingsCount={savings.length}
+        warrantiesCount={warrantiesCount}
       />
 
       {/* Main View */}
@@ -353,6 +418,7 @@ export default function App() {
             onDeleteAccount={handleDeleteAccount}
             onAddAccount={handleAddAccount}
             onOpenPdfModal={() => setIsPdfModalOpen(true)}
+            onOpenEnableBankingModal={() => setIsEnableBankingModalOpen(true)}
           />
         )}
 
@@ -404,7 +470,7 @@ export default function App() {
       <footer className="border-t border-neutral-900 bg-neutral-950 py-4 text-center text-xs text-neutral-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>
-            DuoSpend • Správa bankových výpisov a párových výdavkov v mene EUR (€) pre Daniela & Janku
+            DuoSpend • Správa bankových výpisov a párových výdavkov v mene EUR pre Daniela & Janku
           </span>
           <div className="flex items-center gap-4">
             <button
@@ -450,6 +516,23 @@ export default function App() {
         monthlyIncomes={monthlyIncomes}
         onSaveMonthlyIncome={handleSaveMonthlyIncome}
         onDeleteMonthlyIncome={handleDeleteMonthlyIncome}
+      />
+
+      <EnableBankingModal
+        isOpen={isEnableBankingModalOpen}
+        onClose={() => setIsEnableBankingModalOpen(false)}
+        accounts={accounts}
+        partners={partners}
+        onSyncAccount={handleSyncAccount}
+        onSyncAllAccounts={handleSyncAllAccounts}
+        onConnectNewBank={handleConnectNewBank}
+      />
+
+      <WarrantyArchiveModal
+        isOpen={isWarrantyModalOpen}
+        onClose={() => setIsWarrantyModalOpen(false)}
+        transactions={transactions}
+        onOpenReceiptScanModal={() => setIsReceiptModalOpen(true)}
       />
 
       <AdvisorChatDrawer

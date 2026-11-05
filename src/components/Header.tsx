@@ -23,9 +23,12 @@ interface HeaderProps {
   onOpenIncomeModal: () => void;
   onOpenChatModal: () => void;
   onOpenSettingsModal: () => void;
+  onOpenEnableBankingModal: () => void;
+  onOpenWarrantyModal: () => void;
   accountsCount: number;
   transactionsCount: number;
   savingsCount?: number;
+  warrantiesCount?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -38,9 +41,12 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenIncomeModal,
   onOpenChatModal,
   onOpenSettingsModal,
+  onOpenEnableBankingModal,
+  onOpenWarrantyModal,
   accountsCount,
   transactionsCount,
   savingsCount = 0,
+  warrantiesCount = 0,
 }) => {
   const p1 = partners.find(p => p.id === 'partner1') || { name: 'Daniel', avatarColor: '#8b5cf6' };
   const p2 = partners.find(p => p.id === 'partner2') || { name: 'Janka', avatarColor: '#f59e0b' };
@@ -68,54 +74,68 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Action buttons */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* Quick manual transaction */}
+            {/* Quick manual transaction (cash or card) */}
             <button
               onClick={onOpenManualModal}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-xs font-semibold transition active:scale-95"
-              title="Pridať manuálny výdavok alebo príjem"
+              title="Pridať výdavok v hotovosti alebo kartou"
             >
               <Plus className="w-3.5 h-3.5 text-neutral-950" />
               <span>Pridať transakciu</span>
             </button>
 
-            {/* Monthly Income */}
+            {/* Enable Banking Live Connect */}
             <button
-              onClick={onOpenIncomeModal}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-200 text-xs font-medium transition"
-              title="Mesačné príjmy a výpočet podielov"
+              onClick={onOpenEnableBankingModal}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/35 text-sky-300 text-xs font-semibold transition active:scale-95"
+              title="Enable Banking: živé čítanie zo slovenských bánk"
             >
-              <TrendingUp className="w-3.5 h-3.5 text-neutral-400" />
-              <span>Mesačný príjem</span>
-            </button>
-
-            {/* Import PDF */}
-            <button
-              onClick={onOpenPdfModal}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 text-xs font-medium transition"
-              title="Importovať bankový výpis PDF"
-            >
-              <FileUp className="w-3.5 h-3.5 text-neutral-400" />
-              <span>Import výpisu</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Enable Banking</span>
             </button>
 
             {/* Photo receipt scan */}
             <button
               onClick={onOpenReceiptModal}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 text-xs font-medium transition"
-              title="Odfotiť pokladničný doklad"
+              title="Odfotiť bloček s možnosťou evidencie záruky"
             >
               <Camera className="w-3.5 h-3.5 text-neutral-400" />
-              <span className="hidden sm:inline">Bloček</span>
+              <span className="hidden sm:inline">Odfotiť bloček</span>
             </button>
 
-            {/* AI Advisor Chat */}
+            {/* Warranties & Claims Archive */}
             <button
-              onClick={onOpenChatModal}
+              onClick={onOpenWarrantyModal}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 text-xs font-medium transition"
-              title="AI Poradca"
+              title="Archív účteniek pre reklamáciu a záruky tovaru"
             >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden sm:inline">AI Poradca</span>
+              <span className="hidden sm:inline">Záruky tovaru</span>
+              {warrantiesCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-mono">
+                  {warrantiesCount}
+                </span>
+              )}
+            </button>
+
+            {/* Monthly Income */}
+            <button
+              onClick={onOpenIncomeModal}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 text-xs font-medium transition"
+              title="Mesačné príjmy a výpočet podielov"
+            >
+              <TrendingUp className="w-3.5 h-3.5 text-neutral-400" />
+              <span className="hidden md:inline">Príjem</span>
+            </button>
+
+            {/* Import PDF */}
+            <button
+              onClick={onOpenPdfModal}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 text-xs font-medium transition"
+              title="Importovať bankový výpis PDF"
+            >
+              <FileUp className="w-3.5 h-3.5 text-neutral-400" />
+              <span className="hidden lg:inline">Import</span>
             </button>
 
             {/* Partner profiles */}
@@ -167,7 +187,7 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <CreditCard className="w-3.5 h-3.5" />
             <span>Bankové účty</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded bg-neutral-800 text-neutral-400 font-mono">
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 font-mono">
               {accountsCount}
             </span>
           </button>
@@ -207,7 +227,7 @@ export const Header: React.FC<HeaderProps> = ({
             <PiggyBank className="w-3.5 h-3.5 text-emerald-400" />
             <span>Sporenie & ciele</span>
             {savingsCount > 0 && (
-              <span className="text-[10px] px-1.5 py-0.2 rounded bg-neutral-800 text-neutral-400 font-mono">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 font-mono">
                 {savingsCount}
               </span>
             )}
@@ -223,8 +243,8 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <ReceiptText className="w-3.5 h-3.5" />
             <span>Transakcie</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded bg-neutral-800 text-neutral-400 font-mono">
-              {transactionsCount}
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 font-mono">
+              {transactionsCount} tx
             </span>
           </button>
         </div>

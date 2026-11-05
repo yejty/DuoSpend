@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   Banknote,
   Coins,
@@ -12,9 +12,12 @@ import {
   TrendingUp,
   ShieldCheck,
   Calendar,
+  CheckCircle2,
+  Sparkles
 } from 'lucide-react';
 import { OwnerId, PartnerProfile, SavingsCategory, SavingsItem } from '../types';
 import { OWNER_COLORS, SAVINGS_CATEGORY_COLORS } from '../utils/themeColors';
+import { formatCurrency } from '../utils/calculations';
 
 interface SavingsTabProps {
   savings: SavingsItem[];
@@ -47,6 +50,7 @@ export function SavingsTab({
   const [formCurrentAmount, setFormCurrentAmount] = useState('');
   const [formTargetAmount, setFormTargetAmount] = useState('');
   const [formMonthlyContribution, setFormMonthlyContribution] = useState('');
+  const [formYearlyTarget, setFormYearlyTarget] = useState('');
   const [formInstitution, setFormInstitution] = useState('');
   const [formNote, setFormNote] = useState('');
 
@@ -57,6 +61,7 @@ export function SavingsTab({
   const totalSavings = savings.reduce((acc, item) => acc + item.currentAmount, 0);
   const totalTarget = savings.reduce((acc, item) => acc + (item.targetAmount || 0), 0);
   const totalMonthly = savings.reduce((acc, item) => acc + (item.monthlyContribution || 0), 0);
+  const totalYearly = savings.reduce((acc, item) => acc + (item.yearlyTarget || (item.monthlyContribution ? item.monthlyContribution * 12 : 0)), 0);
 
   const reserveTotal = savings
     .filter(s => s.category === 'Rezerva')
@@ -89,6 +94,7 @@ export function SavingsTab({
     setFormCurrentAmount('');
     setFormTargetAmount('');
     setFormMonthlyContribution('');
+    setFormYearlyTarget('');
     setFormInstitution('');
     setFormNote('');
     setIsModalOpen(true);
@@ -102,6 +108,7 @@ export function SavingsTab({
     setFormCurrentAmount(item.currentAmount.toString());
     setFormTargetAmount(item.targetAmount ? item.targetAmount.toString() : '');
     setFormMonthlyContribution(item.monthlyContribution ? item.monthlyContribution.toString() : '');
+    setFormYearlyTarget(item.yearlyTarget ? item.yearlyTarget.toString() : (item.monthlyContribution ? (item.monthlyContribution * 12).toString() : ''));
     setFormInstitution(item.institutionOrAccount || '');
     setFormNote(item.note || '');
     setIsModalOpen(true);
@@ -114,6 +121,7 @@ export function SavingsTab({
     const currentVal = parseFloat(formCurrentAmount) || 0;
     const targetVal = formTargetAmount ? parseFloat(formTargetAmount) : undefined;
     const monthlyVal = formMonthlyContribution ? parseFloat(formMonthlyContribution) : undefined;
+    const yearlyVal = formYearlyTarget ? parseFloat(formYearlyTarget) : (monthlyVal ? monthlyVal * 12 : undefined);
 
     if (editingItem) {
       onUpdateSavings(editingItem.id, {
@@ -123,6 +131,7 @@ export function SavingsTab({
         currentAmount: currentVal,
         targetAmount: targetVal,
         monthlyContribution: monthlyVal,
+        yearlyTarget: yearlyVal,
         institutionOrAccount: formInstitution.trim() || undefined,
         note: formNote.trim() || undefined,
         lastUpdated: new Date().toISOString().slice(0, 10),
@@ -135,12 +144,23 @@ export function SavingsTab({
         currentAmount: currentVal,
         targetAmount: targetVal,
         monthlyContribution: monthlyVal,
+        yearlyTarget: yearlyVal,
+        currentMonthSaved: monthlyVal || 0,
         institutionOrAccount: formInstitution.trim() || undefined,
         note: formNote.trim() || undefined,
       });
     }
 
     setIsModalOpen(false);
+  };
+
+  const handleDepositMonthly = (item: SavingsItem) => {
+    const contribution = item.monthlyContribution || 50;
+    onUpdateSavings(item.id, {
+      currentAmount: item.currentAmount + contribution,
+      currentMonthSaved: (item.currentMonthSaved || 0) + contribution,
+      lastUpdated: new Date().toISOString().slice(0, 10),
+    });
   };
 
   const handleQuickBalanceSave = (e: React.FormEvent) => {
@@ -175,10 +195,10 @@ export function SavingsTab({
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <PiggyBank className="w-5 h-5 text-emerald-400" />
-            Sporenie, ciele a investície
+            Sporenie a ciele
           </h2>
           <p className="text-sm text-neutral-400 mt-0.5">
-            Prehľad a zadávanie úspor, cieľov sporenia, núdzovej rezervy a investícií
+            Plánovanie mesačných a ročných cieľov, núdzovej rezervy a investícií
           </p>
         </div>
         <button
@@ -186,7 +206,7 @@ export function SavingsTab({
           className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-medium rounded-lg text-sm transition-colors shadow-sm active:scale-95"
         >
           <Plus className="w-4 h-4" />
-          Pridať cieľ / sporenie
+          Pridať cieľ a sporenie
         </button>
       </div>
 
@@ -197,56 +217,60 @@ export function SavingsTab({
             <span>Celkový majetok</span>
             <Landmark className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-2xl font-bold text-white">
-            {totalSavings.toLocaleString('sk-SK', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} €
+          <div className="text-2xl font-bold text-white font-mono">
+            {formatCurrency(totalSavings)}
           </div>
-          <div className="text-xs text-neutral-400 mt-1">
-            Vklad: <span className="text-emerald-400 font-medium">+{totalMonthly.toFixed(0)} €</span> / mesiac
+          <div className="text-xs text-neutral-400 mt-1 font-mono">
+            Cieľ: <span className="text-emerald-400 font-semibold">+{totalMonthly.toFixed(0)} €</span> / mesiac
           </div>
         </div>
 
+        {/* Rezerva - TEAL */}
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
           <div className="flex items-center justify-between text-neutral-400 text-xs mb-1">
             <span>Rezerva</span>
-            <ShieldCheck className="w-4 h-4 text-sky-400" />
+            <ShieldCheck className="w-4 h-4 text-teal-400" />
           </div>
-          <div className="text-xl font-bold text-sky-400">
-            {reserveTotal.toLocaleString('sk-SK', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} €
+          <div className="text-xl font-bold text-teal-400 font-mono">
+            {formatCurrency(reserveTotal)}
           </div>
           <div className="text-xs text-neutral-500 mt-1">Pohotovostný fond</div>
         </div>
 
+        {/* Investície - EMERALD */}
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
           <div className="flex items-center justify-between text-neutral-400 text-xs mb-1">
             <span>Investície</span>
-            <TrendingUp className="w-4 h-4 text-violet-400" />
+            <TrendingUp className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-xl font-bold text-violet-400">
-            {investTotal.toLocaleString('sk-SK', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} €
+          <div className="text-xl font-bold text-emerald-400 font-mono">
+            {formatCurrency(investTotal)}
           </div>
-          <div className="text-xs text-neutral-500 mt-1">ETF, akcie, fondy</div>
+          <div className="text-xs text-neutral-500 mt-1">ETF fondy a akcie</div>
         </div>
 
+        {/* Dôchodok - ROSE */}
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
           <div className="flex items-center justify-between text-neutral-400 text-xs mb-1">
             <span>Dôchodok</span>
-            <Coins className="w-4 h-4 text-amber-400" />
+            <Coins className="w-4 h-4 text-rose-400" />
           </div>
-          <div className="text-xl font-bold text-amber-400">
-            {retirementTotal.toLocaleString('sk-SK', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} €
+          <div className="text-xl font-bold text-rose-400 font-mono">
+            {formatCurrency(retirementTotal)}
           </div>
-          <div className="text-xs text-neutral-500 mt-1">2. a 3. pilier</div>
+          <div className="text-xs text-neutral-500 mt-1">Dôchodkové piliere</div>
         </div>
 
+        {/* Ciele - LIME */}
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
           <div className="flex items-center justify-between text-neutral-400 text-xs mb-1">
             <span>Ciele</span>
-            <Target className="w-4 h-4 text-emerald-400" />
+            <Target className="w-4 h-4 text-lime-400" />
           </div>
-          <div className="text-xl font-bold text-emerald-400">
-            {goalsTotal.toLocaleString('sk-SK', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} €
+          <div className="text-xl font-bold text-lime-400 font-mono">
+            {formatCurrency(goalsTotal)}
           </div>
-          <div className="text-xs text-neutral-500 mt-1">Dovolenka, bývanie...</div>
+          <div className="text-xs text-neutral-500 mt-1">Dovolenka a bývanie</div>
         </div>
       </div>
 
@@ -279,7 +303,7 @@ export function SavingsTab({
             onChange={e => setSelectedOwner(e.target.value)}
             className="bg-neutral-950 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 focus:outline-none focus:border-neutral-600"
           >
-            <option value="all">Všetci (Daniel, Janka, Spoločný)</option>
+            <option value="all">Všetci vlastníci</option>
             <option value="joint">Iba Spoločný účet</option>
             <option value="partner1">Iba {partner1.name}</option>
             <option value="partner2">Iba {partner2.name}</option>
@@ -311,6 +335,11 @@ export function SavingsTab({
               ? Math.min(100, Math.round((item.currentAmount / item.targetAmount) * 100))
               : null;
 
+            const monthlyGoal = item.monthlyContribution || 0;
+            const yearlyGoal = item.yearlyTarget || (monthlyGoal > 0 ? monthlyGoal * 12 : 0);
+            const monthSaved = item.currentMonthSaved ?? monthlyGoal;
+            const isMonthlyMet = monthlyGoal > 0 && monthSaved >= monthlyGoal;
+
             return (
               <div
                 key={item.id}
@@ -320,7 +349,7 @@ export function SavingsTab({
                   {/* Card Header: Category & Owner */}
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <span
-                      className={`px-2 py-0.5 rounded text-xs font-medium border ${catStyle.bgClass} ${catStyle.textClass} ${catStyle.borderClass}`}
+                      className={`px-2 py-0.5 rounded text-xs font-semibold border ${catStyle.bgClass} ${catStyle.textClass} ${catStyle.borderClass}`}
                     >
                       {item.category}
                     </span>
@@ -338,30 +367,89 @@ export function SavingsTab({
                     </div>
                   )}
 
-                  {/* Balance Display */}
+                  {/* Current Balance */}
                   <div className="mt-4 mb-2 flex items-baseline justify-between">
                     <div>
                       <div className="text-xs text-neutral-400">Aktuálny zostatok</div>
-                      <div className="text-2xl font-bold text-white tracking-tight">
-                        {item.currentAmount.toLocaleString('sk-SK', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} €
+                      <div className="text-2xl font-bold text-white tracking-tight font-mono">
+                        {formatCurrency(item.currentAmount)}
                       </div>
                     </div>
-                    {item.monthlyContribution && item.monthlyContribution > 0 && (
-                      <div className="text-right">
-                        <div className="text-xs text-neutral-400">Mesačný vklad</div>
-                        <div className="text-sm font-semibold text-emerald-400">
-                          +{item.monthlyContribution.toFixed(0)} €
+                  </div>
+
+                  {/* Monthly & Yearly Target Tracker */}
+                  <div className="mt-3 p-2.5 rounded-lg bg-neutral-950/70 border border-neutral-800/80 space-y-2 text-xs">
+                    {/* Monthly Target Row */}
+                    {monthlyGoal > 0 ? (
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-neutral-400 flex items-center gap-1">
+                            <Calendar className="w-3 h-3 text-neutral-500" />
+                            <span>Mesačný cieľ:</span>
+                          </span>
+                          <span className="font-mono font-bold text-emerald-400">
+                            +{monthlyGoal.toFixed(0)} € / mesiac
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-neutral-400 mt-1">
+                          <span>Plnenie tento mesiac:</span>
+                          {isMonthlyMet ? (
+                            <span className="text-emerald-400 font-medium flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>Splnené 100 %</span>
+                            </span>
+                          ) : (
+                            <span className="text-neutral-300 font-mono">
+                              {monthSaved} € z {monthlyGoal} €
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-neutral-500 italic">
+                        Mesačný vklad neurčený
+                      </div>
+                    )}
+
+                    {/* Yearly Target Row */}
+                    {yearlyGoal > 0 && (
+                      <div className="pt-2 border-t border-neutral-800/80">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-neutral-400 flex items-center gap-1">
+                            <Target className="w-3 h-3 text-lime-400" />
+                            <span>Ročný cieľ:</span>
+                          </span>
+                          <span className="font-mono font-semibold text-lime-400">
+                            {formatCurrency(yearlyGoal)} / rok
+                          </span>
+                        </div>
+                        <div className="h-1.5 w-full bg-neutral-900 rounded-full overflow-hidden border border-neutral-800 mt-1.5">
+                          <div
+                            className="h-full bg-lime-500 rounded-full transition-all duration-300"
+                            style={{ width: `${Math.min(100, Math.round((item.currentAmount / yearlyGoal) * 100))}%` }}
+                          />
                         </div>
                       </div>
                     )}
+
+                    {/* Quick Deposit Button */}
+                    {monthlyGoal > 0 && (
+                      <button
+                        onClick={() => handleDepositMonthly(item)}
+                        className="w-full mt-1.5 py-1 px-2 rounded-md bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition active:scale-95"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Pridať mesačný vklad +{monthlyGoal.toFixed(0)} €</span>
+                      </button>
+                    )}
                   </div>
 
-                  {/* Progress Bar (if target) */}
+                  {/* Progress Bar (Overall Target) */}
                   {item.targetAmount && item.targetAmount > 0 && (
                     <div className="mt-3">
                       <div className="flex justify-between text-xs text-neutral-400 mb-1">
-                        <span>Cieľ: {item.targetAmount.toLocaleString('sk-SK')} €</span>
-                        <span className="font-medium text-neutral-200">{progress}%</span>
+                        <span>Celkový cieľ: {formatCurrency(item.targetAmount)}</span>
+                        <span className="font-medium text-neutral-200 font-mono">{progress}%</span>
                       </div>
                       <div className="h-2 w-full bg-neutral-950 rounded-full overflow-hidden border border-neutral-800">
                         <div
@@ -382,7 +470,7 @@ export function SavingsTab({
 
                 {/* Footer Actions */}
                 <div className="mt-4 pt-3 border-t border-neutral-800/80 flex items-center justify-between text-xs">
-                  <span className="text-neutral-500 flex items-center gap-1">
+                  <span className="text-neutral-500 flex items-center gap-1 text-[11px]">
                     <Calendar className="w-3 h-3" />
                     {item.lastUpdated || 'Nedávno'}
                   </span>
@@ -393,7 +481,7 @@ export function SavingsTab({
                         setQuickBalanceItem(item);
                         setQuickBalanceVal(item.currentAmount.toString());
                       }}
-                      className="px-2 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors"
+                      className="px-2 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors text-xs"
                       title="Rýchla zmena zostatku"
                     >
                       Zmeniť sumu
@@ -401,7 +489,7 @@ export function SavingsTab({
                     <button
                       onClick={() => openEditModal(item)}
                       className="p-1 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
-                      title="Upraviť položku"
+                      title="Upraviť cieľ"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
@@ -432,13 +520,13 @@ export function SavingsTab({
               Aktualizovať zostatok
             </h3>
             <p className="text-xs text-neutral-400 mb-4">
-              {quickBalanceItem.name} ({getOwnerLabel(quickBalanceItem.ownerId)})
+              {quickBalanceItem.name} • {getOwnerLabel(quickBalanceItem.ownerId)}
             </p>
 
             <form onSubmit={handleQuickBalanceSave} className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-neutral-300 mb-1">
-                  Nový zostatok (€)
+                  Nový zostatok v €
                 </label>
                 <div className="relative">
                   <input
@@ -479,21 +567,21 @@ export function SavingsTab({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="bg-neutral-900 border border-neutral-800 rounded-xl max-w-md w-full p-6 shadow-2xl">
             <h3 className="text-lg font-bold text-white mb-1">
-              {editingItem ? 'Upraviť cieľ / sporenie' : 'Nový cieľ alebo sporenie'}
+              {editingItem ? 'Upraviť cieľ a sporenie' : 'Nový cieľ a sporenie'}
             </h3>
             <p className="text-xs text-neutral-400 mb-4">
-              Zadajte cieľovú sumu a mesačný vklad pre rezervu, investície, dovolenku alebo dôchodok.
+              Zadajte mesačný a ročný cieľ pre rezervu, investície, dovolenku alebo dôchodok.
             </p>
 
             <form onSubmit={handleSave} className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-neutral-300 mb-1">
-                  Názov sporenia / účtu *
+                  Názov sporenia alebo cieľa *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="napr. ETF S&P 500, Pohotovostná rezerva, 3. pilier..."
+                  placeholder="napr. Sporenie na letnú dovolenku, Pohotovostná rezerva..."
                   value={formName}
                   onChange={e => setFormName(e.target.value)}
                   className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neutral-600"
@@ -510,10 +598,10 @@ export function SavingsTab({
                     onChange={e => setFormCategory(e.target.value as SavingsCategory)}
                     className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neutral-600"
                   >
-                    <option value="Rezerva">Rezerva (núdzový fond)</option>
-                    <option value="Investície">Investície (ETF, akcie)</option>
-                    <option value="Dôchodok">Dôchodok (2. a 3. pilier)</option>
-                    <option value="Ciele">Ciele (dovolenka, auto...)</option>
+                    <option value="Rezerva">Rezerva • núdzový fond</option>
+                    <option value="Investície">Investície • ETF a akcie</option>
+                    <option value="Dôchodok">Dôchodok • 2. a 3. pilier</option>
+                    <option value="Ciele">Ciele • dovolenka, auto</option>
                     <option value="Iné">Iné</option>
                   </select>
                 </div>
@@ -536,7 +624,7 @@ export function SavingsTab({
 
               <div>
                 <label className="block text-xs font-medium text-neutral-300 mb-1">
-                  Banka / Finančná inštitúcia
+                  Banka alebo finančná inštitúcia
                 </label>
                 <input
                   type="text"
@@ -547,10 +635,11 @@ export function SavingsTab({
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
+              {/* Targets grid: Current balance, Monthly goal, Yearly goal, Total target */}
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-neutral-300 mb-1">
-                    Aktuálny zostatok (€) *
+                    Aktuálny zostatok v € *
                   </label>
                   <input
                     type="number"
@@ -565,42 +654,63 @@ export function SavingsTab({
 
                 <div>
                   <label className="block text-xs font-medium text-neutral-300 mb-1">
-                    Cieľová suma (€)
+                    Celkový cieľ v €
                   </label>
                   <input
                     type="number"
                     step="0.01"
-                    placeholder="Nepovinné"
+                    placeholder="napr. 2500"
                     value={formTargetAmount}
                     onChange={e => setFormTargetAmount(e.target.value)}
                     className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neutral-600"
                   />
-                  <span className="text-[10px] text-neutral-500 block mt-1">Cieľová čiastka</span>
                 </div>
+              </div>
 
+              <div className="grid grid-cols-2 gap-3 pt-1">
                 <div>
                   <label className="block text-xs font-medium text-neutral-300 mb-1">
-                    Vklad (€ / mesiac)
+                    Mesačný cieľ v € / mesiac
                   </label>
                   <input
                     type="number"
                     step="0.01"
-                    placeholder="0"
+                    placeholder="napr. 50"
                     value={formMonthlyContribution}
-                    onChange={e => setFormMonthlyContribution(e.target.value)}
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neutral-600"
+                    onChange={e => {
+                      setFormMonthlyContribution(e.target.value);
+                      if (e.target.value && !formYearlyTarget) {
+                        setFormYearlyTarget((parseFloat(e.target.value) * 12).toString());
+                      }
+                    }}
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white font-semibold text-emerald-400 focus:outline-none focus:border-neutral-600"
                   />
-                  <span className="text-[10px] text-neutral-500 block mt-1">Určuje cieľ v grafe</span>
+                  <span className="text-[10px] text-neutral-500 block mt-1">napr. 50 € na dovolenku</span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-neutral-300 mb-1">
+                    Ročný cieľ v € / rok
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="napr. 600"
+                    value={formYearlyTarget}
+                    onChange={e => setFormYearlyTarget(e.target.value)}
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white font-semibold text-lime-400 focus:outline-none focus:border-neutral-600"
+                  />
+                  <span className="text-[10px] text-neutral-500 block mt-1">12 mesiacov plán</span>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-neutral-300 mb-1">
-                  Poznámka / Účel
+                  Poznámka alebo účel
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="napr. 6 mesiacov životných nákladov, sporenie na letnú dovolenku..."
+                  placeholder="napr. letná dovolenka pri mori, sporenie 50 € mesačne..."
                   value={formNote}
                   onChange={e => setFormNote(e.target.value)}
                   className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neutral-600"
@@ -619,7 +729,7 @@ export function SavingsTab({
                   type="submit"
                   className="px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-500 hover:bg-emerald-400 text-neutral-950 transition-colors"
                 >
-                  {editingItem ? 'Uložiť zmeny' : 'Pridať sporenie'}
+                  {editingItem ? 'Uložiť zmeny' : 'Pridať cieľ'}
                 </button>
               </div>
             </form>

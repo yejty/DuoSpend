@@ -14,6 +14,7 @@ export interface BankAccount {
   name: string;
   institution: string;
   accountNumberMask: string;
+  iban?: string;
   ownerId: OwnerId;
   accountType: AccountType;
   currency: '€';
@@ -21,6 +22,8 @@ export interface BankAccount {
   color: string;
   importedAt?: string;
   statementFileName?: string;
+  enableBankingConnected?: boolean;
+  lastLiveSync?: string;
 }
 
 export type Category =
@@ -38,6 +41,18 @@ export type Category =
   | 'Príjem a mzda'
   | 'Iné';
 
+export interface WarrantyInfo {
+  isWarranty: boolean;
+  productName: string;
+  warrantyMonths: number; // e.g. 24
+  purchaseDate: string; // YYYY-MM-DD
+  expiresAt: string; // YYYY-MM-DD
+  serialNumber?: string;
+  receiptImageUrl?: string;
+  category?: string;
+  notes?: string;
+}
+
 export interface Transaction {
   id: string;
   accountId: string;
@@ -48,7 +63,9 @@ export interface Transaction {
   category: Category;
   isShared: boolean; // spoločný výdavok pre pár alebo súkromný
   paidByOwnerId: OwnerId;
+  paymentMethod?: 'card' | 'transfer' | 'cash';
   note?: string;
+  warranty?: WarrantyInfo;
 }
 
 export interface MonthlyIncomeRecord {
@@ -87,6 +104,9 @@ export interface ReceiptAnalysisResult {
   splitPerPerson?: number;
   summary: string;
   items?: ReceiptItem[];
+  warrantyDetected?: boolean;
+  suggestedWarrantyMonths?: number;
+  productName?: string;
 }
 
 export type SavingsCategory = 'Rezerva' | 'Investície' | 'Dôchodok' | 'Ciele' | 'Iné';
@@ -96,8 +116,10 @@ export interface SavingsItem {
   name: string;
   category: SavingsCategory;
   currentAmount: number;
-  targetAmount?: number;
-  monthlyContribution?: number;
+  targetAmount?: number; // Celková cieľová suma
+  monthlyContribution?: number; // Mesačný cieľ (napr. 50 € / mes)
+  yearlyTarget?: number; // Ročný cieľ (napr. 600 € / rok)
+  currentMonthSaved?: number; // Koľko sa vložilo v aktuálnom mesiaci
   ownerId: OwnerId;
   institutionOrAccount?: string;
   note?: string;

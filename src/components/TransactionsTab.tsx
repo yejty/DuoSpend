@@ -107,10 +107,13 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
           <div>
             <h2 className="text-sm font-semibold text-zinc-100 flex items-center gap-1.5">
               <ReceiptText className="w-4 h-4 text-zinc-400" />
-              Evidencia transakcií páru
+              <span>Evidencia transakcií páru</span>
+              <span className="px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 font-mono text-[10px]">
+                {filteredTransactions.length} tx
+              </span>
             </h2>
             <p className="text-xs text-zinc-400 mt-0.5">
-              Zobrazených {filteredTransactions.length} z {transactions.length} položiek v mene EUR (€)
+              Zobrazených {filteredTransactions.length} z {transactions.length} položiek v mene EUR
             </p>
           </div>
 
@@ -151,7 +154,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
               onChange={(e) => setSharedFilter(e.target.value as any)}
               className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-zinc-200 focus:outline-none"
             >
-              <option value="all">Všetky (Spoločné aj Súkromné)</option>
+              <option value="all">Všetky výdavky</option>
               <option value="shared">Iba spoločné výdavky</option>
               <option value="private">Iba súkromné výdavky</option>
             </select>
@@ -209,7 +212,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                 <th className="py-2.5 px-3">Zaradenie</th>
                 <th className="py-2.5 px-3">Kategória</th>
                 <th className="py-2.5 px-3">Účet a platiteľ</th>
-                <th className="py-2.5 px-3 text-right">Suma (€)</th>
+                <th className="py-2.5 px-3 text-right">Suma v €</th>
                 <th className="py-2.5 px-2 text-center">Akcia</th>
               </tr>
             </thead>
@@ -235,9 +238,21 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                         {tx.date}
                       </td>
                       <td className="py-2.5 px-3">
-                        <div className="font-medium text-zinc-100">{tx.description}</div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-zinc-100">{tx.description}</span>
+                          {tx.paymentMethod === 'cash' && (
+                            <span className="px-1.5 py-0.2 rounded text-[10px] bg-neutral-800 text-neutral-400 font-mono">
+                              Hotovosť
+                            </span>
+                          )}
+                          {tx.warranty?.isWarranty && (
+                            <span className="px-1.5 py-0.2 rounded text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-mono">
+                              Záruka {tx.warranty.warrantyMonths}m
+                            </span>
+                          )}
+                        </div>
                         {tx.note && (
-                          <div className="text-[11px] text-zinc-500 italic">{tx.note}</div>
+                          <div className="text-[11px] text-zinc-500 italic mt-0.5">{tx.note}</div>
                         )}
                       </td>
                       <td className="py-2.5 px-3 whitespace-nowrap">

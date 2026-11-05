@@ -329,7 +329,7 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({
                 const ownerTxt = acc.ownerId === 'partner1' ? p1.name : acc.ownerId === 'partner2' ? p2.name : 'Spoločný';
                 return (
                   <option key={acc.id} value={acc.id}>
-                    {acc.name} ({ownerTxt})
+                    {acc.name} • {ownerTxt}
                   </option>
                 );
               })}
@@ -465,7 +465,7 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({
                           width: `${catIncomeRatio}%`,
                           backgroundColor: cat.color,
                         }}
-                        title={`${cat.category}: ${formatCurrency(cat.amount)} (${catIncomeRatio.toFixed(1)} % z príjmu)`}
+                        title={`${cat.category}: ${formatCurrency(cat.amount)} • ${catIncomeRatio.toFixed(1)} % z príjmu`}
                         onClick={() => toggleCategoryExpand(cat.category)}
                       />
                     );
@@ -596,7 +596,12 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({
                     {isExpanded && (
                       <div className="border-t border-neutral-800/80 bg-neutral-900/40 p-3 space-y-2">
                         <div className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider px-1 pb-1 flex items-center justify-between">
-                          <span>Zoznam položiek ({cat.txs.length})</span>
+                          <div className="flex items-center gap-2">
+                            <span>Zoznam položiek</span>
+                            <span className="px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 font-mono text-[10px]">
+                              {cat.txs.length} tx
+                            </span>
+                          </div>
                           <span>Suma: {formatCurrency(cat.amount)}</span>
                         </div>
 

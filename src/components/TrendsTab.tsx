@@ -273,7 +273,7 @@ export const TrendsTab: React.FC<TrendsTabProps> = ({
               Trendy výdavkov a plnenie cieľov
             </h2>
             <p className="text-xs text-neutral-400 mt-1">
-              Dlhodobý vývoj spotreby a úspor páru voči nastavenému cieľu ({formatCurrency(monthlySavingsGoal)} / mesiac)
+              Dlhodobý vývoj spotreby a úspor páru voči nastavenému cieľu: {formatCurrency(monthlySavingsGoal)} / mesiac
             </p>
           </div>
 
@@ -418,7 +418,7 @@ export const TrendsTab: React.FC<TrendsTabProps> = ({
                 const ownerTxt = acc.ownerId === 'partner1' ? p1.name : acc.ownerId === 'partner2' ? p2.name : 'Spoločný';
                 return (
                   <option key={acc.id} value={acc.id}>
-                    {acc.name} ({ownerTxt})
+                    {acc.name} • {ownerTxt}
                   </option>
                 );
               })}
@@ -445,7 +445,7 @@ export const TrendsTab: React.FC<TrendsTabProps> = ({
             {formatCurrency(trendSummary.avgMonthlySpend)}
           </div>
           <div className="text-[11px] text-neutral-500 font-mono mt-1">
-            mesačný priemer ({timeframe} mesiacov)
+            mesačný priemer • {timeframe} mesiacov
           </div>
         </div>
 
@@ -480,7 +480,7 @@ export const TrendsTab: React.FC<TrendsTabProps> = ({
         </div>
 
         <div className="p-4 rounded-xl bg-neutral-900 border border-neutral-800">
-          <div className="text-xs text-neutral-400 font-medium">Celkovo ušetrené ({timeframe}m)</div>
+          <div className="text-xs text-neutral-400 font-medium">Celkovo ušetrené • {timeframe} mesiacov</div>
           <div className="text-xl sm:text-2xl font-bold text-sky-400 font-mono mt-1">
             {formatCurrency(trendSummary.totalSaved)}
           </div>
@@ -717,7 +717,7 @@ export const TrendsTab: React.FC<TrendsTabProps> = ({
                       {pt.fullLabel}
                     </span>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-neutral-800 text-neutral-300">
-                      {pt.txCount} výdavkov
+                      {pt.txCount} tx
                     </span>
                   </div>
 
@@ -733,7 +733,7 @@ export const TrendsTab: React.FC<TrendsTabProps> = ({
                     <div className="flex items-center justify-between gap-4">
                       <span className="text-neutral-400">Ušetrené:</span>
                       <span className="font-semibold text-emerald-400">
-                        {formatCurrency(pt.netSavings)} ({pt.savingsRate.toFixed(0)} %)
+                        {formatCurrency(pt.netSavings)} • {pt.savingsRate.toFixed(0)} %
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-4 pt-1 border-t border-neutral-800">
@@ -746,7 +746,7 @@ export const TrendsTab: React.FC<TrendsTabProps> = ({
                     {pt.isGoalMet ? (
                       <span className="text-emerald-400 font-semibold flex items-center gap-1.5">
                         <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
-                        <span>Cieľ splnený (+{formatCurrency(pt.savingsDelta)})</span>
+                        <span>Cieľ splnený +{formatCurrency(pt.savingsDelta)}</span>
                       </span>
                     ) : (
                       <span className="text-rose-400 font-semibold flex items-center gap-1.5">
@@ -841,12 +841,12 @@ export const TrendsTab: React.FC<TrendsTabProps> = ({
                       {row.isGoalMet ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                           <CheckCircle2 className="w-3 h-3" />
-                          <span>V pláne (+{formatCurrency(row.savingsDelta)})</span>
+                          <span>V pláne +{formatCurrency(row.savingsDelta)}</span>
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-rose-500/15 text-rose-400 border border-rose-500/30">
                           <AlertCircle className="w-3 h-3" />
-                          <span>Prekročený ({formatCurrency(row.savingsDelta)})</span>
+                          <span>Prekročený {formatCurrency(Math.abs(row.savingsDelta))}</span>
                         </span>
                       )}
                     </td>
